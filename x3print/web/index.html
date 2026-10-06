@@ -13,6 +13,12 @@
   --yellow:#ffe066;
 }
 * { box-sizing:border-box; }
+html { color-scheme:dark; }
+::-webkit-scrollbar { width:10px; height:10px; background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border); border:2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background:var(--green-dim); }
+::-webkit-scrollbar-corner { background:var(--bg); }
+::-webkit-scrollbar-button { display:none; }
 html, body { height:100%; margin:0; background:var(--bg); color:var(--gray-lt); font:13px "Segoe UI", system-ui, sans-serif; }
 body { display:flex; flex-direction:column; }
 output, .mono { font-family:Consolas, "Cascadia Mono", monospace; }
@@ -37,10 +43,15 @@ h2::after { content:""; flex:1; height:1px; background:var(--border); }
 .row > label { color:var(--gray-lt); white-space:nowrap; }
 .row > output { text-align:right; color:var(--glow); }
 .row > .seg, .row > .step { grid-column:2 / 4; }
-input[type=range] { width:100%; margin:0; accent-color:var(--green); }
+input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:18px; margin:0; background:transparent; cursor:pointer; }
+input[type=range]::-webkit-slider-runnable-track { height:4px; background:var(--border); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:16px; margin-top:-6px; background:var(--green); border:1px solid var(--bg); }
+input[type=range]:hover::-webkit-slider-thumb { background:var(--glow); }
 .checks { display:flex; gap:14px; flex-wrap:wrap; min-height:24px; align-items:center; }
 .checks label { display:flex; gap:6px; align-items:center; cursor:pointer; }
-.checks input { accent-color:var(--green); width:15px; height:15px; margin:0; }
+.checks input { -webkit-appearance:none; appearance:none; width:15px; height:15px; margin:0; background:var(--black); border:1px solid var(--gray); display:grid; place-items:center; cursor:pointer; }
+.checks input:checked { background:var(--green-dk); border-color:var(--glow); }
+.checks input:checked::after { content:""; width:4px; height:8px; margin-top:-2px; border:solid var(--glow); border-width:0 2px 2px 0; transform:rotate(45deg); }
 
 .seg { display:flex; gap:2px; }
 .seg button { flex:1; min-width:0; padding:2px 0; text-align:center; }
@@ -57,7 +68,7 @@ input[type=range] { width:100%; margin:0; accent-color:var(--green); }
 .gobtns { display:grid; grid-template-columns:1fr 84px; gap:6px; }
 #print { padding:10px; font-size:15px; background:var(--green-dk); color:#fff; border-color:var(--green); }
 #print:disabled { background:var(--hex); color:var(--gray); border-color:var(--border); }
-#stop { background:var(--black); border:2px solid var(--gray-lt); font-weight:700; letter-spacing:.06em; }
+#stop { background:var(--black); border-color:var(--gray); font-weight:700; letter-spacing:.06em; }
 #why { color:var(--gray); font-size:12px; min-height:1.3em; margin:5px 0 0; }
 #progress { height:4px; background:var(--hex); margin-top:4px; }
 #progress div { height:100%; width:0; background:var(--green); }
@@ -87,7 +98,13 @@ input[type=range] { width:100%; margin:0; accent-color:var(--green); }
 #lib[hidden] { display:none; }
 #libGrid { overflow:auto; padding:10px; display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }
 .card { background:var(--hex); border:1px solid var(--border); padding:6px; display:flex; flex-direction:column; gap:3px; text-align:left; }
-.card img { width:100%; height:180px; object-fit:contain; background:#fff; display:block; }
+.card img { width:100%; height:180px; object-fit:contain; background:var(--black); display:block; }
+dialog { background:var(--panel); color:var(--gray-lt); border:1px solid var(--green-dim); padding:16px; min-width:320px; box-shadow:0 8px 30px #000; }
+dialog::backdrop { background:rgba(0,0,0,.6); }
+dialog p { margin:0 0 12px; }
+dialog input { width:100%; font:inherit; color:var(--gray-lt); background:var(--black); border:1px solid var(--border); padding:5px 8px; margin-bottom:12px; }
+dialog .btns { display:flex; justify-content:flex-end; gap:6px; }
+dialog .ok { background:var(--green-dk); color:#fff; border-color:var(--green); }
 .card .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .card .meta { color:var(--gray); font-size:11px; font-family:Consolas, monospace; }
 .card.sel { border:2px solid var(--glow); background:var(--active); }
@@ -195,8 +212,19 @@ input[type=range] { width:100%; margin:0; accent-color:var(--green); }
   </section>
 </main>
 
+<dialog id="dlg"><form method="dialog"><p id="dlgMsg"></p><input id="dlgIn"><div class="btns"><button value="no">cancel</button><button value="ok" class="ok">OK</button></div></form></dialog>
 <script>
 "use strict";
+function ask(msg, value) {
+  const d = $("dlg"), inp = $("dlgIn");
+  $("dlgMsg").textContent = msg;
+  inp.hidden = value === undefined; inp.value = value ?? "";
+  d.returnValue = "";
+  inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); d.close("ok"); } };
+  d.showModal();
+  (value === undefined ? d.querySelector(".ok") : inp).focus();
+  return new Promise(res => d.addEventListener("close", () => res(d.returnValue === "ok" ? (value === undefined ? true : inp.value) : null), { once: true }));
+}
 const HEAD = 864, ROWB = 108, DPMM = 300 / 25.4;
 const $ = id => document.getElementById(id);
 const heat = () => Math.round(1 + (S.heat - 1) * 1.4);
@@ -319,7 +347,7 @@ function thumbB64() {
   full.width = HEAD; full.height = H;
   const fx = full.getContext("2d"), img = fx.createImageData(W, H);
   for (let i = 0; i < W * H; i++) { const v = bits[i] ? 0 : 255; img.data[4*i] = img.data[4*i+1] = img.data[4*i+2] = v; img.data[4*i+3] = 255; }
-  fx.fillStyle = "#fff"; fx.fillRect(0, 0, HEAD, H); fx.putImageData(img, offset(W), 0);
+  const bg = fx.createImageData(HEAD, H); fillMargin(bg.data, H); fx.putImageData(bg, 0, 0); fx.putImageData(img, offset(W), 0);
   const w = 240, h = Math.min(720, Math.max(1, Math.round(H * w / HEAD)));
   const c = document.createElement("canvas"); c.width = w; c.height = h;
   const x = c.getContext("2d"); x.imageSmoothingQuality = "high";
@@ -350,7 +378,7 @@ async function saveItem(printed) {
   return libId;
 }
 $("save").addEventListener("click", async () => {
-  const name = prompt("Name for this print:", srcName.replace(/\.[a-z0-9]+$/i, ""));
+  const name = await ask("Name for this print:", srcName.replace(/\.[a-z0-9]+$/i, ""));
   if (name === null) return;
   if (name.trim()) { srcName = name.trim(); $("name").textContent = srcName; }
   libSettings = null;
@@ -392,7 +420,7 @@ $("libClose").addEventListener("click", closeLib);
 $("delMode").addEventListener("click", () => { delMode = true; delSel.clear(); openLib(); });
 $("delCancel").addEventListener("click", () => { delMode = false; delSel.clear(); openLib(); });
 $("delGo").addEventListener("click", async () => {
-  if (!delSel.size || !confirm(`Delete ${delSel.size} saved item${delSel.size > 1 ? "s" : ""}? This cannot be undone.`)) return;
+  if (!delSel.size || !await ask(`Delete ${delSel.size} saved item${delSel.size > 1 ? "s" : ""}? This cannot be undone.`)) return;
   for (const id of delSel) { await fetch(`/library/${id}`, { method: "DELETE" }); if (id === libId) { libId = null; libSettings = null; } }
   delMode = false; delSel.clear(); markSaved(); openLib();
 });
@@ -504,6 +532,12 @@ const HINTS = {
   dithered: "exactly the dots that will print.",
   thermal: "a rough guess at how the dots spread on paper at this heat.",
 };
+function fillMargin(p, H) {
+  for (let y = 0; y < H; y++) for (let xx = 0; xx < HEAD; xx++) {
+    const i = 4 * (y * HEAD + xx);
+    p[i] = p[i+1] = p[i+2] = MARGIN[y & 3][xx & 3]; p[i+3] = 255;
+  }
+}
 const MARGIN = (() => {
   const m = MATS.bayer4, rows = [];
   for (let y = 0; y < 4; y++) { rows.push([]); for (let x = 0; x < 4; x++) rows[y].push((m[y][x] + 0.5) / 16 < 0.7 ? 0 : 255); }
@@ -516,10 +550,7 @@ function draw() {
   $("viewHint").textContent = HINTS[view] + " the patterned strip is paper that stays blank. ctrl+wheel zooms, drag pans.";
   if (cv.width !== HEAD || cv.height !== H) { cv.width = HEAD; cv.height = H; }
   const left = offset(W), img = x.createImageData(HEAD, H), p = img.data;
-  for (let y = 0; y < H; y++) for (let xx = 0; xx < HEAD; xx++) {
-    const i = 4 * (y * HEAD + xx);
-    p[i] = p[i+1] = p[i+2] = MARGIN[y & 3][xx & 3]; p[i+3] = 255;
-  }
+  fillMargin(p, H);
   const put = (xx, y, v) => { const i = 4 * (y * HEAD + xx + left); p[i] = p[i+1] = p[i+2] = v; };
   if (view === "dithered") {
     for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) put(xx, y, out.bits[y * W + xx] ? 0 : 255);
@@ -642,7 +673,7 @@ function pack() {
 $("print").addEventListener("click", async () => {
   if (!out) return;
   const tot = lengthMM();
-  if (tot > 300 && !confirm(`This uses ${tot.toFixed(0)} mm of paper. Print it?`)) return;
+  if (tot > 300 && !await ask(`This uses ${tot.toFixed(0)} mm of paper. Print it?`)) return;
   $("why").textContent = "";
   busy = true; gate();
   const q = new URLSearchParams({ rows: out.H, density: heat(), speed: S.speed, feed: S.feed, copies: S.copies });
