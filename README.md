@@ -41,8 +41,9 @@ Then replug the printer. The rule also keeps ModemManager off it.
 ## Print width
 
 Because of a vendor lockout the X3 only takes rows of 864 dots, which leaves its print
-about 1 mm short of one edge of the paper. X3 Print adds a 1 mm margin to the other
-side so prints come out centred, at the cost of 2 mm of width in total.
+about 2 mm short of one edge of the paper. X3 Print adds a 2 mm margin to the other
+side so prints come out centred, at the cost of 4 mm of width in total. Dots are square,
+300 dpi both ways, so one image pixel at 100% is one dot.
 
 ## Command line
 

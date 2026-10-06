@@ -250,7 +250,7 @@ function ask(msg, value) {
   (value === undefined ? d.querySelector(".ok") : inp).focus();
   return new Promise(res => d.addEventListener("close", () => res(d.returnValue === "ok" ? (value === undefined ? true : inp.value) : null), { once: true }));
 }
-const HEAD = 864, PAD = 12, AREA = HEAD - PAD, ROWB = 108, DPMM = 300 / 25.4;
+const HEAD = 864, PAD = 24, AREA = HEAD - PAD, ROWB = 108, DPMM = 300 / 25.4;
 const $ = id => document.getElementById(id);
 const heat = () => Math.round(1 + (S.heat - 1) * 1.4);
 const S = {};
