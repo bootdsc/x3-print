@@ -1,6 +1,6 @@
 # X3 Print
 
-The Orgbro X3 phone app requires so many permissions its basically spyware. Besides the security risks the app itself is a fluster cuck of ad's and paid add-ons so lets skip it and do make better. 
+The Orgbro X3 phone app requires so many permissions its basically spyware. Besides the security risks the app itself is a fluster cuck of ad's and paid add-ons so lets skip it use something better. 
 
 Don't waste another minute get right to printing with this super easy quick step by step:
 
