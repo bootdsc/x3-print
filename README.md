@@ -1,4 +1,4 @@
-# X3 Print
+# Image preperation and sender program for the Orgbro X3 80mm thermal printer. 
 
 The Orgbro X3 phone app requires so many permissions its basically spyware. Besides the security risks the app itself is a fluster cuck of ad's and paid add-ons so lets skip it use something better. 
 
