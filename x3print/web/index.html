@@ -91,7 +91,7 @@ input[type=range]:hover::-webkit-slider-thumb { background:var(--glow); }
 #empty { margin:auto; text-align:center; color:var(--gray); cursor:pointer; padding:40px; border:1px dashed var(--green-dim); }
 #empty b { display:block; color:var(--gray-lt); font-size:16px; font-weight:normal; margin-bottom:6px; }
 #empty[hidden] { display:none; }
-#viewHint { margin:0; padding:5px 10px; color:var(--gray); font-size:12px; border-top:1px solid var(--border); }
+#viewHint { margin:0; padding:5px 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--gray); font-size:12px; border-top:1px solid var(--border); }
 
 #lib { position:absolute; top:calc(100% + 2px); left:10px; z-index:20; width:min(760px, calc(100% - 20px)); max-height:72vh;
        display:flex; flex-direction:column; background:var(--panel); border:1px solid var(--green-dim); box-shadow:0 8px 30px #000; }
@@ -598,14 +598,16 @@ let zoom = 0;
 function scale() {
   const cv = $("view"), wrap = $("canvasWrap");
   if (zoom) return zoom / devicePixelRatio;
-  return Math.min((wrap.clientWidth - 24) / cv.width, (wrap.clientHeight - 24) / cv.height);
+  const d = Math.min((wrap.clientWidth - 24) / cv.width, (wrap.clientHeight - 24) / cv.height) * devicePixelRatio;
+  return (d >= 1 && Math.floor(d) >= 0.7 * d ? Math.floor(d) : d) / devicePixelRatio;
 }
 function layoutView() {
   const cv = $("view"), wrap = $("canvasWrap");
   if (cv.hidden) return;
   const s = Math.max(0.01, scale());
   cv.style.width = cv.width * s + "px"; cv.style.height = cv.height * s + "px";
-  cv.classList.toggle("px", s * devicePixelRatio >= 1);
+  const dev = s * devicePixelRatio;
+  cv.classList.toggle("px", dev >= 1 && Math.abs(dev - Math.round(dev)) < 0.01);
   if (out) cv.classList.toggle("move", out.g.Wt !== HEAD || out.g.Ht > out.H);
   $("zoomPct").textContent = Math.round(s * devicePixelRatio * 100) + "%";
   for (const o of document.querySelectorAll("#zooms button")) o.classList.toggle("on", +o.dataset.z === zoom);
@@ -632,7 +634,8 @@ new ResizeObserver(layoutView).observe($("canvasWrap"));
     if (!e.ctrlKey || $("view").hidden) return;
     e.preventDefault();
     const now = scale() * devicePixelRatio;
-    setZoom(Math.min(16, Math.max(0.1, now * (e.deltaY < 0 ? 1.25 : 0.8))));
+    const z = e.deltaY < 0 ? (now >= 1 ? Math.floor(now) + 1 : now * 1.25) : (now > 1 ? Math.ceil(now) - 1 : now * 0.8);
+    setZoom(Math.min(16, Math.max(0.1, z >= 0.95 && z < 1.05 ? 1 : z)));
   }, { passive: false });
   let move = null;
   const clamp = v => Math.min(1, Math.max(0, v));
