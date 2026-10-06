@@ -13,7 +13,7 @@ def main():
     except ImportError:
         webview = None
     if webview:
-        webview.create_window("X3 Print", url, width=1280, height=860, min_size=(720, 560),
+        webview.create_window("X3 Print", url, width=1280, height=860, min_size=(900, 640),
                               background_color="#0a0a0a")
         webview.start()
     else:
