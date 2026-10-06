@@ -8,3 +8,11 @@ ref/
 scratch/
 *.part
 .venv/
+x3print/app.py
+x3print/server.py
+x3print/library.py
+x3print/web/
+X3Print.pyw
+build.bat
+x3print.sh
+assets/

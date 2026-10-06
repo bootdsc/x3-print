@@ -35,11 +35,8 @@ def cmd_print(a):
 
 
 def main(argv=None):
-    if not (argv if argv is not None else sys.argv[1:]):
-        from . import app
-        return app.main()
     from .raster import MODES
-    ap = argparse.ArgumentParser(prog="x3print", description="Run with no arguments to open the app.")
+    ap = argparse.ArgumentParser(prog="x3print", description="Command line printing for the Orgbro X3. The app itself is index.html.")
     ap.add_argument("--port", help="serial port, e.g. COM5 or /dev/ttyACM0; found automatically by default")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status").set_defaults(fn=cmd_status)
