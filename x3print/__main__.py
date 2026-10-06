@@ -6,7 +6,6 @@ import time
 def cmd_status(a):
     from . import link
     with link.Printer(a.port) as p:
-        print("model  ", p.model())
         st = p.wait_status()
         if st:
             print(f"battery {st['battery']} %  heat {st['density']}  speed {st['speed']}")

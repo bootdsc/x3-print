@@ -838,7 +838,7 @@ async function poll() {
     if (!printer.connected) st.textContent = "no printer - waiting for it on USB";
     else {
       const flags = ["paper_out", "cover_open", "overheat", "low_battery"].filter(k => printer[k]).map(k => k.replace("_", " "));
-      st.innerHTML = `<b>${esc(printer.model || "X3")}</b>  battery ${printer.battery ?? "?"}%  ` +
+      st.innerHTML = `<b>X3</b>  battery ${printer.battery ?? "?"}%  ` +
         (printer.job ? `printing ${printer.job.sent}/${printer.job.rows} rows` : "idle") +
         (flags.length ? `  <span class="err">ERROR ${flags.join(", ")}</span>` : "");
     }

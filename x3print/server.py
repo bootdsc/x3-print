@@ -25,7 +25,6 @@ class Worker(threading.Thread):
         with self.lock:
             st = dict(self.p.last_status or {}) if self.p else {}
             st["connected"] = self.p is not None
-            st["model"] = self.model
             j = self.job
             st["job"] = j and {"rows": j["rows"] * j["copies"], "sent": j["sent"] + j["rows"] * j["copy"]}
             return st
