@@ -1,0 +1,993 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X3 Print</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --black:#000000; --bg:#0a0a0a; --panel:#141414; --hex:#1a1a1a; --hover:#222a22; --active:#1e331e;
+  --border:#2a2a2a; --gray:#8a8a8a; --gray-lt:#b0b0b0;
+  --green:#5cb85c; --green-dk:#2d5a2d; --green-dim:#3d7a3d; --glow:#7dcf7d;
+  --yellow:#ffe066;
+}
+* { box-sizing:border-box; }
+html { color-scheme:dark; }
+::-webkit-scrollbar { width:10px; height:10px; background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border); border:2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background:var(--green-dim); }
+::-webkit-scrollbar-corner { background:var(--bg); }
+::-webkit-scrollbar-button { display:none; }
+html, body { height:100%; margin:0; background:var(--bg); color:var(--gray-lt); font:13px "Segoe UI", system-ui, sans-serif; }
+body { display:flex; flex-direction:column; overflow:hidden; }
+output, .mono { font-family:Consolas, "Cascadia Mono", monospace; }
+button, select { font:inherit; color:var(--gray-lt); background:var(--hex); border:1px solid var(--border); padding:3px 8px; cursor:pointer; }
+button:hover { background:var(--hover); border-color:var(--green-dim); }
+button:disabled { color:var(--gray); background:var(--hex); border-color:var(--border); cursor:default; }
+button:focus-visible, input:focus-visible { outline:2px solid var(--glow); outline-offset:1px; }
+.err { color:var(--yellow); }
+
+header { display:flex; align-items:baseline; gap:14px; padding:7px 12px; background:var(--panel); border-bottom:1px solid var(--border); }
+#status { font-family:Consolas, monospace; color:var(--gray); }
+#status b { color:var(--glow); font-weight:normal; }
+
+main { flex:1; min-height:0; display:grid; grid-template-columns:clamp(270px, 28vw, 320px) minmax(0,1fr); }
+aside { background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0; user-select:none; }
+#controls { flex:1; overflow:auto; padding:4px 12px 8px; }
+h2 { margin:8px 0 3px; font-size:11px; font-weight:600; color:var(--green); letter-spacing:.1em; text-transform:uppercase;
+     display:flex; align-items:center; gap:8px; }
+h2::after { content:""; flex:1; height:1px; background:var(--border); }
+.row { display:grid; grid-template-columns:66px minmax(0,1fr) 44px; align-items:center; gap:6px; min-height:23px; margin:1px 0; }
+.row > label { color:var(--gray-lt); white-space:nowrap; }
+.row > output { text-align:right; color:var(--glow); }
+.row > .seg, .row > .step { grid-column:2 / 4; }
+input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:18px; margin:0; background:transparent; cursor:pointer; }
+input[type=range]::-webkit-slider-runnable-track { height:4px; background:var(--border); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:16px; margin-top:-6px; background:var(--green); border:1px solid var(--bg); }
+input[type=range]:hover::-webkit-slider-thumb { background:var(--glow); }
+.checks { display:flex; gap:14px; flex-wrap:wrap; min-height:24px; align-items:center; }
+.checks label { display:flex; gap:6px; align-items:center; cursor:pointer; }
+.checks input { -webkit-appearance:none; appearance:none; width:15px; height:15px; margin:0; background:var(--black); border:1px solid var(--gray); display:grid; place-items:center; cursor:pointer; }
+.checks input:checked { background:var(--green-dk); border-color:var(--glow); }
+.checks input:checked::after { content:""; width:4px; height:8px; margin-top:-2px; border:solid var(--glow); border-width:0 2px 2px 0; transform:rotate(45deg); }
+
+.seg { display:flex; gap:2px; }
+.seg button { flex:1; min-width:0; padding:2px 0; text-align:center; }
+.seg.num button { font-family:Consolas, monospace; font-size:12px; }
+.seg.grid { margin-bottom:3px; }
+.seg.grid { display:grid; grid-template-columns:repeat(4, 1fr); }
+.seg button.on, #views button.on, #zooms button.on { background:var(--green-dk); color:#fff; border-color:var(--glow); font-weight:600; }
+.step { display:grid; grid-template-columns:28px 1fr 28px; gap:2px; }
+.step output { text-align:center; color:var(--glow); background:var(--black); border:1px solid var(--border); padding:2px 0; }
+.step button { padding:2px 0; }
+::selection { background:var(--green-dk); color:#fff; }
+output.edit { cursor:text; }
+output.edit:hover { outline:1px solid var(--green-dim); }
+input.typed { width:100%; box-sizing:border-box; min-width:0; font:inherit; font-family:Consolas, monospace; color:var(--glow); background:var(--black);
+              border:1px solid var(--glow); outline:0; padding:1px 2px; }
+.row > input.typed { text-align:right; }
+.step input.typed { text-align:center; }
+
+#go { border-top:1px solid var(--border); padding:6px 12px 8px; }
+#len { font-family:Consolas, monospace; color:var(--glow); margin:0 0 6px; }
+.gobtns { display:grid; grid-template-columns:1fr 84px; gap:6px; }
+#print { padding:10px; font-size:15px; background:var(--green-dk); color:#fff; border-color:var(--green); }
+#print:disabled { background:var(--hex); color:var(--gray); border-color:var(--border); }
+#stop { background:var(--black); border-color:var(--gray); font-weight:700; letter-spacing:.06em; }
+#why { color:var(--gray); font-size:12px; min-height:1.3em; margin:5px 0 0; }
+#progress { height:4px; background:var(--hex); margin-top:4px; visibility:hidden; }
+#progress.on { visibility:visible; }
+#progress div { height:100%; width:0; background:var(--green); }
+
+#stage { display:flex; flex-direction:column; min-height:0; min-width:0; }
+#bar { display:flex; flex-direction:column; gap:5px; padding:6px 10px; border-bottom:1px solid var(--border); position:relative; user-select:none; }
+#bar .brow { display:flex; align-items:center; gap:6px; min-width:0; }
+#name { color:var(--gray-lt); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#saved { color:var(--gray); font-size:12px; white-space:nowrap; }
+#bar .grow { flex:1; }
+#views, #zooms { display:flex; gap:2px; }
+#bar button { white-space:nowrap; }
+#zoomPct { width:5ch; text-align:right; color:var(--gray); }
+
+#canvasWrap { flex:1; min-height:0; overflow:auto; display:flex; background:var(--black); padding:12px; position:relative; }
+#view.move { cursor:move; }
+#canvasWrap.panning { cursor:grabbing; }
+#canvasWrap.over { outline:2px dashed var(--glow); outline-offset:-6px; }
+#view { margin:auto; flex-shrink:0; outline:1px solid var(--border); image-rendering:auto; }
+#view.px { image-rendering:pixelated; }
+#view[hidden] { display:none; }
+#empty { margin:auto; text-align:center; color:var(--gray); cursor:pointer; padding:40px; border:1px dashed var(--green-dim); }
+#empty b { display:block; color:var(--gray-lt); font-size:16px; font-weight:normal; margin-bottom:6px; }
+#empty[hidden] { display:none; }
+#viewHint { margin:0; padding:5px 10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--gray); font-size:12px; border-top:1px solid var(--border); }
+
+#lib { position:absolute; top:calc(100% + 2px); left:10px; z-index:20; width:min(760px, calc(100% - 20px)); max-height:72vh;
+       display:flex; flex-direction:column; background:var(--panel); border:1px solid var(--green-dim); box-shadow:0 8px 30px #000; }
+#lib[hidden] { display:none; }
+#libGrid { overflow:auto; padding:10px; display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }
+.card { background:var(--hex); border:1px solid var(--border); padding:6px; display:flex; flex-direction:column; gap:3px; text-align:left; }
+.card img { width:100%; height:180px; object-fit:contain; background:var(--black); display:block; }
+dialog { background:var(--panel); color:var(--gray-lt); border:1px solid var(--green-dim); padding:16px; min-width:320px; box-shadow:0 8px 30px #000; }
+dialog::backdrop { background:rgba(0,0,0,.6); }
+dialog p { margin:0 0 12px; }
+dialog input { width:100%; font:inherit; color:var(--gray-lt); background:var(--black); border:1px solid var(--border); padding:5px 8px; margin-bottom:12px; }
+dialog .btns { display:flex; justify-content:flex-end; gap:6px; }
+dialog .ok { background:var(--green-dk); color:#fff; border-color:var(--green); }
+.card .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.card .meta { color:var(--gray); font-size:11px; font-family:Consolas, monospace; }
+.card.sel { border:2px solid var(--glow); background:var(--active); }
+.card .tick { font-family:Consolas, monospace; color:var(--glow); }
+#libFoot { display:flex; gap:6px; align-items:center; padding:8px 10px; border-top:1px solid var(--border); flex-wrap:wrap; }
+#libFoot .msg { flex:1; color:var(--gray); font-size:12px; }
+#libEmpty { padding:20px; color:var(--gray); grid-column:1 / -1; }
+#presetBox { position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px; margin:2px 0 4px; }
+#preset { text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#presetList { position:absolute; top:calc(100% + 2px); left:0; right:0; z-index:20; max-height:50vh; overflow:auto;
+              background:var(--panel); border:1px solid var(--green-dim); box-shadow:0 8px 30px #000; padding:2px; }
+#presetList[hidden] { display:none; }
+#presetList .pi { display:grid; grid-template-columns:minmax(0,1fr) 28px; gap:2px; margin:1px 0; }
+#presetList .pi button:first-child { text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#presetList .pi.on button:first-child { background:var(--green-dk); color:#fff; border-color:var(--glow); }
+#presetList .none { padding:8px; color:var(--gray); font-size:12px; }
+
+</style>
+</head>
+<body>
+<header>
+  <div id="status">no printer</div>
+  <button id="connect" hidden>connect printer</button>
+</header>
+<main>
+  <aside>
+    <div id="controls">
+      <h2>Preset</h2>
+      <div id="presetBox" title="saved image, dither and printer settings - one per paper or sticker stock">
+        <button id="preset">none &#9662;</button><button id="presetSave">save as...</button>
+        <div id="presetList" hidden></div>
+      </div>
+      <h2>Size</h2>
+      <div class="checks"><label><input type="checkbox" id="longways" checked>long side down the paper</label></div>
+      <div class="row"><label>rotate</label><div class="seg" data-for="rot"></div><input type="hidden" id="rot" value="0"></div>
+      <div class="row"><label for="scale">scale</label><input type="range" id="scale" min="10" max="500" step="1" value="100"><output id="scale_o"></output></div>
+      <div class="row"><label>position</label><div class="seg" data-for="posx"></div><input type="hidden" id="posx" value="0.5"><input type="hidden" id="posy" value="0.5"></div>
+
+      <h2>Image</h2>
+      <div class="row"><label for="bright">brightness</label><input type="range" id="bright" min="-100" max="100" value="0"><output id="bright_o"></output></div>
+      <div class="row"><label for="contrast">contrast</label><input type="range" id="contrast" min="-100" max="200" value="0"><output id="contrast_o"></output></div>
+      <div class="row"><label for="gamma">gamma</label><input type="range" id="gamma" min="30" max="300" value="100"><output id="gamma_o"></output></div>
+      <div class="row"><label for="sharp">sharpen</label><input type="range" id="sharp" min="0" max="300" value="0"><output id="sharp_o"></output></div>
+      <div class="checks">
+        <label><input type="checkbox" id="invert">invert</label>
+        <label><input type="checkbox" id="smooth" checked>smooth scaling</label>
+      </div>
+      <div class="row" title="each image pixel prints as an N x N block of dots"><label>pixel size</label><div class="step" data-for="pix"></div><input type="hidden" id="pix" value="1"></div>
+      <div class="row" title="posterise to this many greys before dithering"><label>grey levels</label><div class="step" data-for="levels"></div><input type="hidden" id="levels" value="64"></div>
+
+      <h2>Dither</h2>
+      <div class="seg grid" data-for="dither"></div><input type="hidden" id="dither" value="atkinson">
+      <div class="row" title="larger cells: coarser texture, holds up better against heat spread"><label>cell size</label><div class="seg num" data-for="cell"></div><input type="hidden" id="cell" value="1"></div>
+      <div class="row"><label for="thresh">threshold</label><input type="range" id="thresh" min="1" max="99" value="50"><output id="thresh_o"></output></div>
+      <p id="levelsNote" class="err" hidden></p>
+
+      <h2>Printer</h2>
+      <div class="row"><label>heat</label><div class="seg num" data-for="heat"></div><input type="hidden" id="heat" value="7"></div>
+      <div class="row"><label for="speed">speed</label><input type="range" id="speed" min="10" max="100" value="100"><output id="speed_o"></output></div>
+      <div class="row"><label>feed after</label><div class="step" data-for="feed"></div><input type="hidden" id="feed" value="8"></div>
+      <div class="row"><label>copies</label><div class="step" data-for="copies"></div><input type="hidden" id="copies" value="1"></div>
+    </div>
+    <div id="go">
+      <p id="len">no image</p>
+      <div class="gobtns">
+        <button id="print" disabled>print</button>
+        <button id="stop">STOP</button>
+      </div>
+      <p id="why"></p>
+      <div id="progress"><div></div></div>
+    </div>
+  </aside>
+
+  <section id="stage">
+    <div id="bar">
+      <div class="brow">
+      <button id="open">open...</button>
+      <button id="libBtn" aria-expanded="false">library &#9662;</button>
+      <button id="save" disabled>save</button>
+      <span id="name"></span>
+      <span id="saved"></span>
+      </div>
+      <div class="brow">
+      <div id="views">
+        <button data-v="original">original</button>
+        <button data-v="gray">grey</button>
+        <button data-v="decimated">decimated</button>
+        <button data-v="dithered" class="on">dots</button>
+        <button data-v="thermal">on paper</button>
+      </div>
+      <span class="grow"></span>
+      <div id="zooms">
+        <button data-z="0" class="on">fit</button>
+        <button data-z="1">1:1</button>
+        <button data-z="2">2x</button>
+        <button data-z="4">4x</button>
+        <button data-z="8">8x</button>
+      </div>
+      <span id="zoomPct" class="mono"></span>
+      </div>
+      <input id="file" type="file" accept="image/*" hidden>
+      <div id="lib" hidden>
+        <div id="libGrid"></div>
+        <div id="libFoot">
+          <span class="msg" id="libMsg"></span>
+          <button id="exportLib">export</button>
+          <button id="importLib">import</button>
+          <input id="importFile" type="file" accept=".json,application/json" hidden>
+          <button id="delMode">delete items...</button>
+          <button id="delGo" hidden>delete selected</button>
+          <button id="delCancel" hidden>cancel</button>
+          <button id="libClose">close</button>
+        </div>
+      </div>
+    </div>
+    <div id="canvasWrap">
+      <div id="empty"><b>drop an image here</b>or paste one, or click to open a file</div>
+      <canvas id="view" width="864" height="200" hidden></canvas>
+    </div>
+    <p id="viewHint"></p>
+  </section>
+</main>
+
+<dialog id="dlg"><form method="dialog"><p id="dlgMsg"></p><input id="dlgIn"><div class="btns"><button value="no">cancel</button><button value="ok" class="ok">OK</button></div></form></dialog>
+<script>
+"use strict";
+function ask(msg, value) {
+  const d = $("dlg"), inp = $("dlgIn");
+  $("dlgMsg").textContent = msg;
+  inp.hidden = value === undefined; inp.value = value ?? "";
+  d.returnValue = "";
+  inp.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); d.close("ok"); } };
+  d.showModal();
+  (value === undefined ? d.querySelector(".ok") : inp).focus();
+  return new Promise(res => d.addEventListener("close", () => res(d.returnValue === "ok" ? (value === undefined ? true : inp.value) : null), { once: true }));
+}
+const HEAD = 864, ROWB = 108, DPMM = 300 / 25.4;
+const $ = id => document.getElementById(id);
+const heat = () => Math.round(1 + (S.heat - 1) * 1.4);
+const S = {};
+let src = null, view = "dithered", out = null, printer = null, busy = false;
+
+function bayer(n) {
+  if (n === 1) return [[0]];
+  const h = bayer(n / 2), m = [];
+  for (let y = 0; y < n; y++) { m.push([]); for (let x = 0; x < n; x++) {
+    const q = (y < n / 2 ? 0 : 2) + (x < n / 2 ? 0 : 1);
+    m[y].push(4 * h[y % (n / 2)][x % (n / 2)] + [0, 2, 3, 1][q]); } }
+  return m;
+}
+const MATS = {
+  bayer2: [[0, 2], [3, 1]],
+  bayer4: bayer(4),
+  bayer8: bayer(8),
+  cluster4: [[12, 5, 6, 13], [4, 0, 1, 7], [11, 3, 2, 8], [15, 10, 9, 14]],
+  cluster8: [[24,10,12,26,35,47,49,37],[8,0,2,14,45,59,61,51],[22,6,4,16,43,57,63,53],[30,20,18,28,33,41,55,39],
+             [34,46,48,36,25,11,13,27],[44,58,60,50,9,1,3,15],[42,56,62,52,23,7,5,17],[32,40,54,38,31,21,19,29]],
+};
+const KERN = {
+  floyd: [[1,0,7/16],[-1,1,3/16],[0,1,5/16],[1,1,1/16]],
+  atkinson: [[1,0,1/8],[2,0,1/8],[-1,1,1/8],[0,1,1/8],[1,1,1/8],[0,2,1/8]],
+};
+
+const range = (a, b, s = 1) => Array.from({ length: Math.floor((b - a) / s) + 1 }, (_, i) => a + i * s);
+const FMT = {
+  scale: v => v + "%", bright: v => v, contrast: v => v,
+  gamma: v => (v / 100).toFixed(2), sharp: v => (v / 100).toFixed(1), thresh: v => v, speed: v => v,
+  pix: v => v + "x", levels: v => v >= 64 ? "all" : v, feed: v => v + " mm", copies: v => v,
+};
+const STEPS = { pix: range(1, 16), levels: [2, 3, 4, 5, 6, 8, 12, 16, 24, 32, 64], feed: range(0, 40, 2), copies: range(1, 10) };
+const SEGS = {
+  rot: [0, 90, 180, 270].map(v => [v, v + "°"]),
+  posx: [[0, "left"], [0.5, "center"], [1, "right"]],
+  cell: range(1, 6).map(v => [v, v + "x"]),
+  heat: range(1, 11).map(v => [v, v]),
+  dither: [["bayer2", "bayer 2"], ["bayer4", "bayer 4"], ["bayer8", "bayer 8"], ["cluster4", "cluster 4"],
+           ["cluster8", "cluster 8"], ["floyd", "floyd"], ["atkinson", "atkinson"], ["threshold", "none"]],
+};
+const TEXT = new Set(["dither"]);
+const PRINT_ONLY = new Set(["speed", "feed", "copies"]);
+const CHECKS = ["longways", "invert", "smooth"];
+const SET_IDS = [...Object.keys(FMT), ...Object.keys(SEGS), ...CHECKS, "posy"];
+
+function setVal(id, v) { const el = $(id); el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); }
+
+for (const [id, opts] of Object.entries(SEGS)) {
+  const box = document.querySelector(`.seg[data-for="${id}"]`);
+  for (const [v, label] of opts) {
+    const b = document.createElement("button");
+    b.textContent = label; b.dataset.v = v;
+    b.addEventListener("click", () => setVal(id, v));
+    box.append(b);
+  }
+}
+for (const [id, list] of Object.entries(STEPS)) {
+  const box = document.querySelector(`.step[data-for="${id}"]`);
+  const dn = document.createElement("button"), up = document.createElement("button"), o = document.createElement("output");
+  dn.textContent = "−"; up.textContent = "+"; o.id = id + "_o";
+  dn.addEventListener("click", () => { const v = +$(id).value, p = list.filter(x => x < v); if (p.length) setVal(id, p[p.length - 1]); });
+  up.addEventListener("click", () => { const v = +$(id).value, n = list.find(x => x > v); if (n !== undefined) setVal(id, n); });
+  box.append(dn, o, up);
+}
+for (const id of SET_IDS) {
+  const el = $(id);
+  const sync = () => {
+    if (!TEXT.has(id) && !CHECKS.includes(id)) S[id] = +el.value;
+    const o = $(id + "_o");
+    if (o) o.textContent = FMT[id](S[id]);
+    const box = document.querySelector(`.seg[data-for="${id}"]`);
+    if (box) for (const b of box.children) b.classList.toggle("on", b.dataset.v === String(el.value));
+  };
+  sync();
+  el.addEventListener("input", () => {
+    sync();
+    if (PRINT_ONLY.has(id)) showLength();
+    else if (id === "heat") { if (view === "thermal") draw(); }
+    else schedule();
+  });
+  if (el.type === "range") {
+    el.addEventListener("dblclick", () => setVal(id, el.defaultValue));
+    el.addEventListener("wheel", e => {
+      if (document.activeElement !== el) return;
+      e.preventDefault();
+      setVal(id, Math.min(+el.max, Math.max(+el.min, +el.value + (e.deltaY < 0 ? 1 : -1) * (+el.step || 1))));
+    }, { passive: false });
+  }
+  const o = $(id + "_o");
+  if (o) { o.classList.add("edit"); o.title = "click to type a value"; o.addEventListener("click", () => typeIn(id, o)); }
+}
+
+const UNIT = { gamma: 100, sharp: 100 };
+function typeIn(id, o) {
+  const el = $(id), list = STEPS[id], inp = document.createElement("input");
+  const lo = list ? list[0] : +el.min, hi = list ? list[list.length - 1] : +el.max;
+  inp.className = "typed"; inp.value = o.textContent.replace(/[^\d.\-a-z]/gi, "").replace(/x$|mm$/, "");
+  o.hidden = true; o.after(inp); inp.focus(); inp.select();
+  let done = false;
+  const finish = ok => {
+    if (done) return; done = true;
+    if (ok) {
+      const t = inp.value.trim().toLowerCase();
+      let v = t === "all" ? hi : parseFloat(t) * (UNIT[id] || 1);
+      if (Number.isFinite(v)) {
+        v = Math.min(hi, Math.max(lo, Math.round(v)));
+        if (!list && el.step && el.step !== "any") v = lo + Math.round((v - lo) / +el.step) * +el.step;
+        setVal(id, v);
+      }
+    }
+    inp.remove(); o.hidden = false;
+  };
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") finish(true); else if (e.key === "Escape") finish(false); });
+  inp.addEventListener("blur", () => finish(true));
+}
+
+let srcBlob = null, srcName = "", libId = null, libSettings = null;
+function loadFile(f, opts = {}) {
+  if (!f || !f.type.startsWith("image/")) return;
+  const url = URL.createObjectURL(f), im = new Image();
+  im.onload = () => {
+    src = im; srcBlob = f; srcName = opts.name || f.name || "pasted image";
+    libId = opts.id || null; libSettings = opts.settings ? JSON.stringify(opts.settings) : null;
+    $("name").textContent = srcName; $("name").title = srcName;
+    if (opts.settings) setSettings(opts.settings);
+    $("save").disabled = false; markSaved();
+    schedule();
+  };
+  im.src = url;
+}
+
+function getSettings() {
+  const s = {};
+  for (const id of SET_IDS) { const el = $(id); s[id] = el.type === "checkbox" ? el.checked : el.value; }
+  return s;
+}
+function setSettings(s) {
+  s = { ...s };
+  if (!("scale" in s) && "width" in s) s.scale = s.width;
+  if (!("posx" in s) && "align" in s) s.posx = { left: 0, right: 1 }[s.align] ?? 0.5;
+  for (const id of SET_IDS) {
+    if (!(id in s)) continue;
+    const el = $(id);
+    if (el.type === "checkbox") el.checked = !!s[id]; else el.value = s[id];
+    el.dispatchEvent(new Event("input"));
+  }
+}
+const unchanged = () => libId && libSettings === JSON.stringify(getSettings());
+function markSaved() { $("saved").textContent = !src ? "" : unchanged() ? "saved" : libId ? "changed since saved" : "not saved"; }
+document.querySelector("aside").addEventListener("input", () => requestAnimationFrame(() => { markSaved(); showPreset(); }));
+
+const DB = (() => {
+  let db = null;
+  const open = () => db ? Promise.resolve(db) : new Promise((res, rej) => {
+    const q = indexedDB.open("x3print", 1);
+    q.onupgradeneeded = () => { q.result.createObjectStore("items", { keyPath: "id" }); q.result.createObjectStore("presets", { keyPath: "name" }); };
+    q.onsuccess = () => res(db = q.result); q.onerror = () => rej(q.error);
+  });
+  const run = (store, mode, fn) => open().then(d => new Promise((res, rej) => {
+    const t = d.transaction(store, mode), r = fn(t.objectStore(store));
+    t.oncomplete = () => res(r.result); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error);
+  }));
+  return {
+    all: st => run(st, "readonly", o => o.getAll()),
+    get: (st, k) => run(st, "readonly", o => o.get(k)),
+    put: (st, v) => run(st, "readwrite", o => o.put(v)),
+    del: (st, k) => run(st, "readwrite", o => o.delete(k)),
+  };
+})();
+try { navigator.storage.persist(); } catch {}
+
+const PRESET_IDS = ["bright", "contrast", "gamma", "sharp", "invert", "smooth", "pix", "levels", "dither", "cell", "thresh", "heat", "speed", "feed"];
+let presets = {}, presetName = "";
+function curPreset() { const all = getSettings(); return Object.fromEntries(PRESET_IDS.map(k => [k, all[k]])); }
+function showPreset() {
+  const p = presets[presetName];
+  if (!p) presetName = "";
+  const changed = p && JSON.stringify(PRESET_IDS.map(k => String(p[k]))) !== JSON.stringify(PRESET_IDS.map(k => String(curPreset()[k])));
+  $("preset").textContent = (presetName || "no preset") + (changed ? " (changed)" : "") + " ▾";
+}
+async function loadPresets() {
+  try { presets = Object.fromEntries((await DB.all("presets")).map(p => [p.name, p.settings])); } catch { presets = {}; }
+  showPreset(); if (!$("presetList").hidden) listPresets();
+}
+function listPresets() {
+  const box = $("presetList"), names = Object.keys(presets).sort((a, b) => a.localeCompare(b));
+  box.replaceChildren();
+  if (!names.length) { const d = document.createElement("div"); d.className = "none"; d.textContent = "no presets yet - tune the settings, then save as..."; box.append(d); }
+  for (const n of names) {
+    const row = document.createElement("div"), use = document.createElement("button"), del = document.createElement("button");
+    row.className = "pi" + (n === presetName ? " on" : ""); use.textContent = n; use.title = n; del.textContent = "×"; del.title = "delete " + n;
+    use.addEventListener("click", () => { setSettings(presets[n]); presetName = n; box.hidden = true; showPreset(); });
+    del.addEventListener("click", async () => {
+      if (!await ask(`delete preset "${n}"?`)) return;
+      await DB.del("presets", n);
+      if (presetName === n) presetName = "";
+      loadPresets();
+    });
+    row.append(use, del); box.append(row);
+  }
+}
+$("preset").addEventListener("click", () => { const b = $("presetList"); b.hidden = !b.hidden; if (!b.hidden) listPresets(); });
+document.addEventListener("pointerdown", e => { if (!$("presetBox").contains(e.target)) $("presetList").hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("presetList").hidden = true; });
+$("presetSave").addEventListener("click", async () => {
+  $("presetList").hidden = true;
+  const n = (await ask("name this preset - the paper or sticker stock it is tuned for", presetName) || "").trim();
+  if (!n) return;
+  if (n !== presetName && presets[n] && !await ask(`replace the preset "${n}"?`)) return;
+  try { await DB.put("presets", { name: n.slice(0, 60), settings: curPreset() }); presetName = n.slice(0, 60); }
+  catch (e) { showError("could not save the preset: " + e.message); }
+  loadPresets();
+});
+loadPresets();
+
+function thumbBlob() {
+  const { W, H, bits } = out, full = document.createElement("canvas");
+  full.width = HEAD; full.height = H;
+  const fx = full.getContext("2d"), img = fx.createImageData(W, H);
+  for (let i = 0; i < W * H; i++) { const v = bits[i] ? 0 : 255; img.data[4*i] = img.data[4*i+1] = img.data[4*i+2] = v; img.data[4*i+3] = 255; }
+  const bg = fx.createImageData(HEAD, H); fillMargin(bg.data, H); fx.putImageData(bg, 0, 0); fx.putImageData(img, out.g.left, 0);
+  const w = 240, h = Math.min(720, Math.max(1, Math.round(H * w / HEAD)));
+  const c = document.createElement("canvas"); c.width = w; c.height = h;
+  const x = c.getContext("2d"); x.imageSmoothingQuality = "high";
+  x.drawImage(full, 0, 0, HEAD, h * HEAD / w, 0, 0, w, h);
+  return new Promise(r => c.toBlob(r, "image/png"));
+}
+async function saveItem(printed) {
+  if (!srcBlob || !out) return null;
+  if (unchanged()) {
+    const it = await DB.get("items", libId);
+    if (printed && it) { it.printed = (it.printed || 0) + 1; it.updated = Date.now(); await DB.put("items", it); }
+    return libId;
+  }
+  let blob = srcBlob;
+  if (!["image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp"].includes(blob.type)) {
+    const c = document.createElement("canvas"); c.width = src.naturalWidth; c.height = src.naturalHeight;
+    c.getContext("2d").drawImage(src, 0, 0); blob = await new Promise(r => c.toBlob(r, "image/png"));
+  }
+  const now = Date.now(), it = { id: now.toString(36) + Math.random().toString(36).slice(2, 8), name: srcName.slice(0, 120),
+    settings: getSettings(), source: blob, thumb: await thumbBlob(), created: now, updated: now, printed: printed ? 1 : 0 };
+  try { await DB.put("items", it); } catch (e) { showError("could not save to the library: " + e.message); return null; }
+  libId = it.id; libSettings = JSON.stringify(it.settings);
+  markSaved();
+  return libId;
+}
+$("save").addEventListener("click", async () => {
+  const name = await ask("Name for this print:", srcName.replace(/\.[a-z0-9]+$/i, ""));
+  if (name === null) return;
+  if (name.trim()) { srcName = name.trim(); $("name").textContent = srcName; }
+  libSettings = null;
+  await saveItem(false);
+});
+
+let delMode = false, delSel = new Set(), thumbUrls = [];
+async function openLib() {
+  $("lib").hidden = false; $("libBtn").setAttribute("aria-expanded", "true");
+  const items = (await DB.all("items")).sort((a, b) => b.updated - a.updated);
+  for (const u of thumbUrls) URL.revokeObjectURL(u);
+  thumbUrls = [];
+  const grid = $("libGrid"); grid.innerHTML = "";
+  if (!items.length) grid.innerHTML = '<div id="libEmpty">nothing saved yet. save or print something and it shows up here.</div>';
+  for (const it of items) {
+    const b = document.createElement("button"); b.className = "card" + (delSel.has(it.id) ? " sel" : "");
+    const d = new Date(it.updated), tu = URL.createObjectURL(it.thumb);
+    thumbUrls.push(tu);
+    b.innerHTML = `<img alt="" src="${tu}"><span class="nm"></span>` +
+      `<span class="meta">${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}` +
+      `${it.printed ? " · printed " + it.printed + "x" : ""}</span>` +
+      (delMode ? `<span class="tick">${delSel.has(it.id) ? "[x] marked" : "[ ] keep"}</span>` : "");
+    b.querySelector(".nm").textContent = it.name;
+    b.addEventListener("click", () => delMode ? toggleDel(it.id) : loadItem(it));
+    grid.append(b);
+  }
+  $("libMsg").textContent = delMode ? `${delSel.size} marked for deletion` : `${items.length} saved`;
+  $("delMode").hidden = delMode; $("delGo").hidden = !delMode; $("delCancel").hidden = !delMode;
+  $("delGo").disabled = !delSel.size;
+}
+function closeLib() { $("lib").hidden = true; $("libBtn").setAttribute("aria-expanded", "false"); delMode = false; delSel.clear(); }
+function toggleDel(id) { delSel.has(id) ? delSel.delete(id) : delSel.add(id); openLib(); }
+async function loadItem(it) {
+  closeLib();
+  loadFile(it.source, { id: it.id, name: it.name, settings: it.settings });
+}
+$("libBtn").addEventListener("click", () => $("lib").hidden ? openLib() : closeLib());
+$("libClose").addEventListener("click", closeLib);
+$("delMode").addEventListener("click", () => { delMode = true; delSel.clear(); openLib(); });
+$("delCancel").addEventListener("click", () => { delMode = false; delSel.clear(); openLib(); });
+$("delGo").addEventListener("click", async () => {
+  if (!delSel.size || !await ask(`Delete ${delSel.size} saved item${delSel.size > 1 ? "s" : ""}? This cannot be undone.`)) return;
+  for (const id of delSel) { await DB.del("items", id); if (id === libId) { libId = null; libSettings = null; } }
+  delMode = false; delSel.clear(); markSaved(); openLib();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("lib").hidden) closeLib(); });
+const toData = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+const fromData = async u => (await fetch(u)).blob();
+$("exportLib").addEventListener("click", async () => {
+  const items = [];
+  for (const it of await DB.all("items")) items.push({ ...it, source: await toData(it.source), thumb: await toData(it.thumb) });
+  const blob = new Blob([JSON.stringify({ x3print: 1, presets: await DB.all("presets"), items })], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "x3print-library.json"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$("importLib").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", async e => {
+  const f = e.target.files[0]; e.target.value = "";
+  if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (j.x3print !== 1) throw new Error("not an X3 Print export");
+    for (const p of j.presets || []) await DB.put("presets", p);
+    for (const it of j.items || []) await DB.put("items", { ...it, source: await fromData(it.source), thumb: await fromData(it.thumb) });
+    $("libMsg").textContent = `imported ${(j.items || []).length} items, ${(j.presets || []).length} presets`;
+    loadPresets(); setTimeout(openLib, 1200);
+  } catch (err) { $("libMsg").textContent = ""; showError("import failed: " + err.message); }
+});
+
+$("open").addEventListener("click", () => $("file").click());
+$("empty").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
+document.addEventListener("dragstart", e => e.preventDefault());
+const isFileDrag = e => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+for (const ev of ["dragenter", "dragover"]) document.addEventListener(ev, e => { if (!isFileDrag(e)) return; e.preventDefault(); $("canvasWrap").classList.add("over"); });
+for (const ev of ["dragleave", "drop"]) document.addEventListener(ev, e => { if (!isFileDrag(e)) return; e.preventDefault(); $("canvasWrap").classList.remove("over"); });
+document.addEventListener("drop", e => { if (isFileDrag(e)) loadFile(e.dataTransfer.files[0]); });
+document.addEventListener("paste", e => { for (const it of e.clipboardData.items) if (it.type.startsWith("image/")) loadFile(it.getAsFile()); });
+
+let pending = false;
+function schedule() { if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; run(); }); } }
+
+function geometry() {
+  let rot = +$("rot").value;
+  const w0 = src.naturalWidth, h0 = src.naturalHeight;
+  if ($("longways").checked && w0 > h0) rot = (rot + 90) % 360;
+  const sw = rot % 180 ? h0 : w0, sh = rot % 180 ? w0 : h0;
+  const sc = S.scale / 100, pix = S.pix;
+  const Wt = Math.max(8, Math.round(HEAD * sc)), Ht = Math.max(1, Math.round(sh * Wt / sw));
+  const W = Math.min(Wt, HEAD), H = sc > 1 ? Math.min(Ht, Math.max(1, Math.round(sh * HEAD / sw))) : Ht;
+  const left = Math.round(S.posx * (HEAD - W));
+  const ox = Math.round(S.posx * (Wt - W)), oy = Math.round(S.posy * (Ht - H));
+  return { rot, pix, Wt, Ht, left, ox, oy, pw: Math.ceil(W / pix), ph: Math.ceil(H / pix), dotsW: W, dotsH: H };
+}
+
+function renderSource(g, smooth) {
+  const w = g.pw, h = g.ph, c = new OffscreenCanvas(w, h), x = c.getContext("2d");
+  x.imageSmoothingEnabled = smooth; x.imageSmoothingQuality = "high";
+  x.fillStyle = "#fff"; x.fillRect(0, 0, w, h);
+  x.scale(1 / g.pix, 1 / g.pix);
+  x.translate(g.Wt / 2 - g.ox, g.Ht / 2 - g.oy); x.rotate(g.rot * Math.PI / 180);
+  const r = g.rot % 180 ? [g.Ht, g.Wt] : [g.Wt, g.Ht];
+  x.drawImage(src, -r[0] / 2, -r[1] / 2, r[0], r[1]);
+  return x.getImageData(0, 0, w, h);
+}
+
+function run() {
+  if (!src) return;
+  const g = geometry();
+  const rgba = renderSource(g, $("smooth").checked);
+  const n = g.pw * g.ph, lum = new Float32Array(n), d = rgba.data;
+  for (let i = 0; i < n; i++) lum[i] = (0.2126 * d[4*i] + 0.7152 * d[4*i+1] + 0.0722 * d[4*i+2]) / 255;
+
+  const b = S.bright / 200, k = 1 + S.contrast / 100, ig = 1 / (S.gamma / 100), inv = $("invert").checked;
+  let tone = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const v = Math.pow(Math.min(1, Math.max(0, (lum[i] - 0.5) * k + 0.5 + b)), ig);
+    tone[i] = inv ? 1 - v : v;
+  }
+  if (S.sharp > 0) tone = sharpen(tone, g.pw, g.ph, S.sharp / 100);
+
+  const L = S.levels, dec = L >= 64 ? tone : tone.map(v => Math.round(v * (L - 1)) / (L - 1));
+
+  const W = g.dotsW, H = g.dotsH, bits = new Uint8Array(W * H);
+  const mode = $("dither").value, cell = S.cell, th = S.thresh / 100;
+  if (MATS[mode]) {
+    const m = MATS[mode], N = m.length, NN = N * N, bias = th - 0.5;
+    for (let y = 0; y < H; y++) {
+      const row = ((y / g.pix) | 0) * g.pw, mr = m[((y / cell) | 0) % N];
+      for (let x = 0; x < W; x++)
+        bits[y * W + x] = dec[row + ((x / g.pix) | 0)] < (mr[((x / cell) | 0) % N] + 0.5) / NN + bias ? 1 : 0;
+    }
+  } else {
+    const cw = Math.ceil(W / cell), ch = Math.ceil(H / cell), e = new Float32Array(cw * ch);
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++)
+      e[y * cw + x] = dec[Math.min(g.ph - 1, ((y * cell) / g.pix) | 0) * g.pw + Math.min(g.pw - 1, ((x * cell) / g.pix) | 0)];
+    const c1 = new Uint8Array(cw * ch), K = KERN[mode];
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+      const i = y * cw + x, old = e[i], nv = old < th ? 0 : 1;
+      c1[i] = nv ? 0 : 1;
+      if (!K) continue;
+      const err = old - nv;
+      for (const [dx, dy, f] of K) {
+        const xx = x + dx, yy = y + dy;
+        if (xx >= 0 && xx < cw && yy < ch) e[yy * cw + xx] += err * f;
+      }
+    }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) bits[y * W + x] = c1[((y / cell) | 0) * cw + ((x / cell) | 0)];
+  }
+  const note = $("levelsNote");
+  note.hidden = L !== 2;
+  note.textContent = "grey levels is 2, so every pattern prints the same. raise it to dither.";
+  out = { g, rgba, tone, dec, bits, W, H };
+  draw(); showLength();
+}
+
+function sharpen(a, w, h, amt) {
+  const o = new Float32Array(a.length);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let s = 0, c = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const xx = x + dx, yy = y + dy;
+      if (xx >= 0 && yy >= 0 && xx < w && yy < h) { s += a[yy * w + xx]; c++; }
+    }
+    const i = y * w + x;
+    o[i] = Math.min(1, Math.max(0, a[i] + amt * (a[i] - s / c)));
+  }
+  return o;
+}
+
+const HINTS = {
+  original: "the image in colour, at the resolution it is sampled at.",
+  gray: "brightness, contrast, gamma, sharpen and invert applied.",
+  decimated: "after pixel size and grey levels, before dithering.",
+  dithered: "exactly the dots that will print.",
+  thermal: "a rough guess at how the dots spread on paper at this heat.",
+};
+function fillMargin(p, H) {
+  for (let y = 0; y < H; y++) for (let xx = 0; xx < HEAD; xx++) {
+    const i = 4 * (y * HEAD + xx);
+    p[i] = p[i+1] = p[i+2] = MARGIN[y & 3][xx & 3]; p[i+3] = 255;
+  }
+}
+const MARGIN = (() => {
+  const m = MATS.bayer4, rows = [];
+  for (let y = 0; y < 4; y++) { rows.push([]); for (let x = 0; x < 4; x++) rows[y].push((m[y][x] + 0.5) / 16 < 0.7 ? 0 : 255); }
+  return rows;
+})();
+function draw() {
+  if (!out) return;
+  const { g, W, H } = out, cv = $("view");
+  $("empty").hidden = true; cv.hidden = false;
+  $("viewHint").textContent = HINTS[view] + " patterned paper stays blank. drag the image to move it, double-click to centre. ctrl+wheel zooms, middle-drag pans.";
+  const left = g.left, img = new ImageData(HEAD, H), p = img.data;
+  fillMargin(p, H);
+  const put = (xx, y, v) => { const i = 4 * (y * HEAD + xx + left); p[i] = p[i+1] = p[i+2] = v; };
+  if (view === "dithered") {
+    for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) put(xx, y, out.bits[y * W + xx] ? 0 : 255);
+  } else if (view === "thermal") {
+    const t = thermal(W, H);
+    for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) put(xx, y, t[y * W + xx]);
+  } else {
+    const srcA = view === "gray" ? out.tone : view === "decimated" ? out.dec : null, d = out.rgba.data;
+    for (let y = 0; y < H; y++) {
+      const row = Math.min(g.ph - 1, (y / g.pix) | 0) * g.pw;
+      for (let xx = 0; xx < W; xx++) {
+        const si = row + Math.min(g.pw - 1, (xx / g.pix) | 0);
+        if (srcA) put(xx, y, srcA[si] * 255);
+        else { const i = 4 * (y * HEAD + xx + left); p[i] = d[4*si]; p[i+1] = d[4*si+1]; p[i+2] = d[4*si+2]; }
+      }
+    }
+  }
+  shown = img; shownAt = 0;
+  layoutView();
+}
+
+let shown = null, shownAt = 0;
+function shrink(src, dw, dh) {
+  const sw = src.width, sh = src.height, a = src.data, kx = sw / dw, ky = sh / dh, bx = Math.max(2, kx), by = Math.max(2, ky);
+  const col = new Float32Array(3 * dw * sh), o = new ImageData(dw, dh), d = o.data;
+  for (let y = 0; y < sh; y++) for (let x = 0; x < dw; x++) {
+    const x0 = Math.max(0, (x + 0.5) * kx - bx / 2), x1 = Math.min(sw, (x + 0.5) * kx + bx / 2), n = x1 - x0, k = 3 * (y * dw + x);
+    for (let i = x0 | 0; i < x1; i++) {
+      const w = (Math.min(x1, i + 1) - Math.max(x0, i)) / n, q = 4 * (y * sw + i);
+      col[k] += a[q] * w; col[k + 1] += a[q + 1] * w; col[k + 2] += a[q + 2] * w;
+    }
+  }
+  for (let y = 0; y < dh; y++) {
+    const y0 = Math.max(0, (y + 0.5) * ky - by / 2), y1 = Math.min(sh, (y + 0.5) * ky + by / 2), n = y1 - y0;
+    for (let x = 0; x < dw; x++) {
+      const k = 4 * (y * dw + x); let r = 0, gr = 0, b = 0;
+      for (let j = y0 | 0; j < y1; j++) {
+        const w = (Math.min(y1, j + 1) - Math.max(y0, j)) / n, q = 3 * (j * dw + x);
+        r += col[q] * w; gr += col[q + 1] * w; b += col[q + 2] * w;
+      }
+      d[k] = r; d[k + 1] = gr; d[k + 2] = b; d[k + 3] = 255;
+    }
+  }
+  return o;
+}
+
+function thermal(W, H) {
+  const h = heat(), r = 0.35 + h * 0.06, rad = Math.ceil(r * 2), ker = [];
+  let ks = 0;
+  for (let i = -rad; i <= rad; i++) { const v = Math.exp(-(i * i) / (2 * r * r)); ker.push(v); ks += v; }
+  const a = out.bits, t = new Float32Array(W * H), o = new Uint8ClampedArray(W * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    let s = 0; for (let k = -rad; k <= rad; k++) s += a[y * W + Math.min(W - 1, Math.max(0, x + k))] * ker[k + rad];
+    t[y * W + x] = s / ks;
+  }
+  const gain = 1.6 + h * 0.12, ink = 20, paper = 244;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    let s = 0; for (let k = -rad; k <= rad; k++) s += t[Math.min(H - 1, Math.max(0, y + k)) * W + x] * ker[k + rad];
+    o[y * W + x] = paper - (paper - ink) * Math.min(1, (s / ks) * gain);
+  }
+  return o;
+}
+
+let zoom = 0;
+function scale() {
+  const cv = $("view"), wrap = $("canvasWrap");
+  if (zoom) return zoom / devicePixelRatio;
+  const d = Math.min((wrap.clientWidth - 26) / HEAD, (wrap.clientHeight - 26) / (out ? out.H : cv.height)) * devicePixelRatio;
+  return (d >= 1 && Math.floor(d) >= 0.7 * d ? Math.floor(d) : d) / devicePixelRatio;
+}
+function layoutView() {
+  const cv = $("view"), wrap = $("canvasWrap");
+  if (cv.hidden) return;
+  const s = Math.max(0.01, scale()), dev = s * devicePixelRatio;
+  if (shown) {
+    const fit = dev < 1 ? Math.max(1, Math.floor(HEAD * dev)) : HEAD;
+    if (shownAt !== fit) {
+      const im = fit === HEAD ? shown : shrink(shown, fit, Math.max(1, Math.floor(shown.height * fit / HEAD)));
+      cv.width = im.width; cv.height = im.height; cv.getContext("2d").putImageData(im, 0, 0); shownAt = fit;
+    }
+    cv.style.width = cv.width / devicePixelRatio * (dev < 1 ? 1 : dev) + "px";
+    cv.style.height = cv.height / devicePixelRatio * (dev < 1 ? 1 : dev) + "px";
+  }
+  cv.classList.toggle("px", dev >= 1 && Math.abs(dev - Math.round(dev)) < 0.01);
+  if (out) cv.classList.toggle("move", out.g.Wt !== HEAD || out.g.Ht > out.H);
+  $("zoomPct").textContent = Math.round(s * devicePixelRatio * 100) + "%";
+  for (const o of document.querySelectorAll("#zooms button")) o.classList.toggle("on", +o.dataset.z === zoom);
+}
+function setZoom(z) {
+  const wrap = $("canvasWrap");
+  const fx = (wrap.scrollLeft + wrap.clientWidth / 2) / Math.max(1, wrap.scrollWidth);
+  const fy = (wrap.scrollTop + wrap.clientHeight / 2) / Math.max(1, wrap.scrollHeight);
+  zoom = z; layoutView();
+  wrap.scrollLeft = fx * wrap.scrollWidth - wrap.clientWidth / 2;
+  wrap.scrollTop = fy * wrap.scrollHeight - wrap.clientHeight / 2;
+}
+for (const b of document.querySelectorAll("#zooms button")) b.addEventListener("click", () => setZoom(+b.dataset.z));
+for (const b of document.querySelectorAll("#views button"))
+  b.addEventListener("click", () => {
+    view = b.dataset.v;
+    for (const o of document.querySelectorAll("#views button")) o.classList.toggle("on", o === b);
+    draw();
+  });
+new ResizeObserver(layoutView).observe($("canvasWrap"));
+{
+  const wrap = $("canvasWrap"); let pan = null;
+  wrap.addEventListener("wheel", e => {
+    if (!e.ctrlKey || $("view").hidden) return;
+    e.preventDefault();
+    const now = scale() * devicePixelRatio;
+    const z = e.deltaY < 0 ? (now >= 1 ? Math.floor(now) + 1 : now * 1.25) : (now > 1 ? Math.ceil(now) - 1 : now * 0.8);
+    setZoom(Math.min(16, Math.max(0.1, z >= 0.95 && z < 1.05 ? 1 : z)));
+  }, { passive: false });
+  let move = null;
+  const clamp = v => Math.min(1, Math.max(0, v));
+  wrap.addEventListener("pointerdown", e => {
+    if (e.button === 1) {
+      pan = { x: e.clientX, y: e.clientY, l: wrap.scrollLeft, t: wrap.scrollTop };
+      wrap.classList.add("panning");
+    } else if (e.button === 0 && e.target === $("view") && out) {
+      move = { x: e.clientX, y: e.clientY, px: S.posx, py: S.posy };
+    } else return;
+    wrap.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  wrap.addEventListener("pointermove", e => {
+    if (pan) { wrap.scrollLeft = pan.l - (e.clientX - pan.x); wrap.scrollTop = pan.t - (e.clientY - pan.y); }
+    if (!move) return;
+    const g = out.g, k = 1 / scale(), dx = (e.clientX - move.x) * k, dy = (e.clientY - move.y) * k;
+    if (g.Wt < HEAD) setVal("posx", clamp(move.px + dx / (HEAD - g.Wt)));
+    else if (g.Wt > HEAD) setVal("posx", clamp(move.px - dx / (g.Wt - HEAD)));
+    if (g.Ht > out.H) setVal("posy", clamp(move.py - dy / (g.Ht - out.H)));
+  });
+  for (const ev of ["pointerup", "pointercancel"]) wrap.addEventListener(ev, () => { pan = move = null; wrap.classList.remove("panning"); });
+  $("view").addEventListener("dblclick", () => { setVal("posx", 0.5); setVal("posy", 0.5); });
+}
+
+function lengthMM() { return out ? (out.H / DPMM + S.feed) * S.copies : 0; }
+function showLength() {
+  if (!out) { gate(); return; }
+  const one = out.H / DPMM + S.feed, tot = one * S.copies;
+  const w = (out.W / DPMM).toFixed(0);
+  $("len").textContent = `${w} x ${one.toFixed(0)} mm` + (S.copies > 1 ? `, ${S.copies} copies = ${tot.toFixed(0)} mm of paper` : "");
+  $("print").textContent = `print ${tot.toFixed(0)} mm`;
+  gate();
+}
+function gate() {
+  let why = "";
+  if (!src) why = "open an image first.";
+  else if (!printer || !printer.connected) why = "printer not connected - plug it in over USB and switch it on.";
+  else if (busy || printer.job) why = "printing - press STOP to cancel.";
+  else if (printer.paper_out) why = "out of paper.";
+  else if (printer.cover_open) why = "cover is open.";
+  $("print").disabled = !!why;
+  if (!$("why").querySelector(".err")) $("why").textContent = why;
+}
+
+function pack() {
+  const { W, H, bits } = out, left = out.g.left, buf = new Uint8Array(H * ROWB);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++)
+    if (bits[y * W + x]) { const X = x + left; buf[y * ROWB + (X >> 3)] |= 0x80 >> (X & 7); }
+  return buf;
+}
+
+$("print").addEventListener("click", async () => {
+  if (!out) return;
+  const tot = lengthMM();
+  if (tot > 300 && !await ask(`This uses ${tot.toFixed(0)} mm of paper. Print it?`)) return;
+  $("why").textContent = "";
+  busy = true; gate();
+  try {
+    const job = runJob(pack(), out.H, { density: heat(), speed: S.speed, feed: S.feed, copies: S.copies });
+    await saveItem(true);
+    await job;
+  } catch (e) { showError("printing failed: " + e.message); }
+  busy = false; gate();
+});
+$("stop").addEventListener("click", () => { X3.cancel = true; });
+
+function showError(msg) { $("why").innerHTML = ""; const s = document.createElement("span"); s.className = "err"; s.textContent = "ERROR " + msg; $("why").append(s); }
+
+const VID = 0x0483, PID = 0x5720;
+const X3 = { port: null, writer: null, seq: 0, st: {}, job: null, cancel: false, problem: false };
+let rx = new Uint8Array(0);
+
+function frame(cmd, pl = new Uint8Array(0)) {
+  const n = pl.length, f = new Uint8Array(n + 10);
+  f.set([0x64, cmd, X3.seq, n & 255, n >> 8]); f.set(pl, 5);
+  X3.seq = (X3.seq + 1) & 0x3f;
+  let sum = 0x12345678 + 0x9B;
+  for (let i = 0; i < n + 5; i++) sum += f[i];
+  sum >>>= 0;
+  f[n + 5] = sum & 255; f[n + 6] = sum >>> 8 & 255; f[n + 7] = sum >>> 16 & 255; f[n + 8] = sum >>> 24; f[n + 9] = 0x9B;
+  return f;
+}
+function feed(chunk) {
+  const b = new Uint8Array(rx.length + chunk.length); b.set(rx); b.set(chunk, rx.length); rx = b;
+  for (;;) {
+    const i = rx.indexOf(0x64);
+    if (i < 0) { rx = new Uint8Array(0); return; }
+    rx = rx.subarray(i);
+    if (rx.length < 5) return;
+    const n = (rx[3] | rx[4] << 8) + 10;
+    if (n > 4096) { rx = rx.subarray(1); continue; }
+    if (rx.length < n) return;
+    let sum = 0x12345678 + 0x9B;
+    for (let k = 0; k < n - 5; k++) sum += rx[k];
+    const integ = (rx[n - 5] | rx[n - 4] << 8 | rx[n - 3] << 16 | rx[n - 2] << 24) >>> 0;
+    if (rx[n - 1] !== 0x9B || (integ !== 0 && integ !== sum >>> 0)) { rx = rx.subarray(1); continue; }
+    onFrame(rx[1], rx.slice(5, n - 5));
+    rx = rx.subarray(n);
+  }
+}
+function onFrame(cmd, pl) {
+  if ((cmd === 0x80 || cmd === 0x81 || cmd === 0xFF) && pl.length >= 8) {
+    const bits = pl[2] | pl[3] << 8;
+    X3.st = { cover_open: !!(bits & 256), low_battery: !!(bits & 512), overheat: !!(bits & 1024), paper_out: !!(bits & 2048), battery: pl[7] };
+    showStatus();
+  }
+}
+const isX3 = port => { const i = port.getInfo(); return i.usbVendorId === VID && i.usbProductId === PID; };
+async function openPort(port) {
+  if (X3.port) return;
+  try { await port.open({ baudRate: 115200, bufferSize: 4096 }); }
+  catch (e) { if (e.name !== "InvalidStateError") { X3.problem = true; showStatus(); return; } }
+  X3.port = port; X3.problem = false; X3.writer = port.writable.getWriter(); X3.st = {}; X3.seq = 0; rx = new Uint8Array(0);
+  showStatus();
+  readLoop(port);
+}
+async function readLoop(port) {
+  while (X3.port === port && port.readable) {
+    const r = port.readable.getReader();
+    try { for (;;) { const { value, done } = await r.read(); if (done) break; feed(value); } }
+    catch { break; }
+    finally { r.releaseLock(); }
+  }
+  if (X3.port === port) dropPort();
+}
+function dropPort() {
+  const p = X3.port;
+  X3.cancel = true; X3.port = null; X3.job = null;
+  try { X3.writer && X3.writer.releaseLock(); } catch {}
+  X3.writer = null;
+  if (p) p.close().catch(() => {});
+  showStatus();
+}
+async function send(cmd, pl) { await X3.writer.write(frame(cmd, pl)); }
+async function runJob(data, rows, o) {
+  X3.cancel = false; X3.job = { sent: 0, rows: rows * o.copies }; showStatus();
+  try {
+    for (let c = 0; c < o.copies && !X3.cancel; c++) {
+      await send(0x0A, Uint8Array.of(o.speed));
+      await send(0x09, Uint8Array.of(o.density));
+      await send(0x28, Uint8Array.of(1, 0));
+      for (let r = 0; r < rows && !X3.cancel; r += 4) {
+        await send(0x00, data.subarray(r * ROWB, Math.min(rows, r + 4) * ROWB));
+        X3.job.sent = c * rows + Math.min(rows, r + 4);
+        if (r % 32 === 0) showStatus();
+      }
+      if (X3.cancel) break;
+      const dots = Math.round(o.feed * DPMM);
+      if (dots) await send(0x02, Uint8Array.of(dots & 255, dots >> 8));
+    }
+  } finally { X3.job = null; showStatus(); }
+}
+function showStatus() {
+  printer = { connected: !!X3.port, ...X3.st, job: X3.job };
+  const st = $("status"), web = "serial" in navigator;
+  $("connect").hidden = !web || !!X3.port;
+  if (!web) st.innerHTML = '<span class="err">ERROR</span> this browser cannot reach USB printers. open it in Chrome or Edge';
+  else if (!X3.port && X3.problem) st.innerHTML = '<span class="err">ERROR</span> the printer port will not open. another app has it, or on Linux see the README';
+  else if (!X3.port) st.textContent = "no printer - plug it in, switch it on, click connect";
+  else {
+    const flags = ["paper_out", "cover_open", "overheat", "low_battery"].filter(k => printer[k]).map(k => k.replace("_", " "));
+    st.innerHTML = `<b>connected</b>  battery ${printer.battery ?? "?"}%  ` +
+      (printer.job ? `printing ${printer.job.sent}/${printer.job.rows} rows` : "idle") +
+      (flags.length ? `  <span class="err">ERROR ${flags.join(", ")}</span>` : "");
+  }
+  const pr = printer.job ? printer.job.sent / Math.max(1, printer.job.rows) : 0;
+  $("progress").firstElementChild.style.width = (pr * 100).toFixed(1) + "%";
+  $("progress").classList.toggle("on", !!printer.job);
+  gate();
+}
+if ("serial" in navigator) {
+  $("connect").addEventListener("click", async () => {
+    try { await openPort(await navigator.serial.requestPort({ filters: [{ usbVendorId: VID, usbProductId: PID }] })); }
+    catch (e) { if (e.name !== "NotFoundError") { X3.problem = true; showStatus(); } }
+  });
+  navigator.serial.addEventListener("connect", e => { if (isX3(e.target)) openPort(e.target); });
+  navigator.serial.addEventListener("disconnect", e => { if (e.target === X3.port) dropPort(); });
+  navigator.serial.getPorts().then(ps => { const p = ps.find(isX3); if (p) openPort(p); });
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+showStatus();
+</script>
+</body>
+</html>
