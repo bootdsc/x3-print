@@ -7,3 +7,4 @@ dev/
 ref/
 scratch/
 *.part
+.venv/

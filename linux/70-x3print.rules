@@ -1,0 +1,1 @@
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5720", TAG+="uaccess", ENV{ID_MM_DEVICE_IGNORE}="1"

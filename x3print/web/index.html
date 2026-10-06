@@ -839,7 +839,8 @@ async function poll() {
     const r = await fetch("/status", { cache: "no-store" });
     printer = await r.json();
     const st = $("status");
-    if (!printer.connected) st.textContent = "no printer - waiting for it on USB";
+    if (!printer.connected && printer.problem) st.innerHTML = '<span class="err">ERROR</span> printer found, but ' + (printer.problem === "permission denied" ? "the port is locked. on Linux, see the README" : "the port will not open");
+    else if (!printer.connected) st.textContent = "no printer - waiting for it on USB";
     else {
       const flags = ["paper_out", "cover_open", "overheat", "low_battery"].filter(k => printer[k]).map(k => k.replace("_", " "));
       st.innerHTML = `<b>connected</b>  battery ${printer.battery ?? "?"}%  ` +

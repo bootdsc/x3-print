@@ -1,67 +1,65 @@
 # X3 Print
 
-A small desktop app for printing images on the Orgbro X3 thermal printer over USB,
-without the phone app.
+The Orgbro X3 wants you to install its phone app. Skip it. Plug the printer into your
+PC with a USB-C cable and print from here. No spyware APK sideloading. The app talks to
+the printer and to nothing else.
 
-The X3 is a 3-inch, 300 dpi label and photo printer sold for use with the "Snap & Tag"
-app. Plug it into a PC with a USB-C cable, open X3 Print, drop in a picture, and print.
+Mine is headed for the cyberdeck docking station to crank out stickers and labels on
+demand.
 
 ![X3 Print](docs/screenshot.png)
 
-## Download
+## Get it
 
-Grab `X3Print.exe` from the Releases page, run it, and plug the printer in. There is
-nothing to install. Windows only for the ready-made build; on other systems run it from
-source (below).
+`X3Print.exe` is on the Releases page. It isn't signed, so SmartScreen will complain the
+first time. More info, then Run anyway.
 
-Windows SmartScreen may warn about an unsigned app the first time. Choose
-*More info* then *Run anyway*.
+## Worth knowing
 
-## Using it
-
-- **Load** an image by dropping it on the window, pasting it, or clicking the drop area.
-- **Size:** rotate, scale 10-500% of the paper width, and place it left, center or
-  right, or drag the image to move it. Long images print down the paper by default.
-- **Decimate:** pixel size turns each image pixel into an N x N block of dots, for a
-  chunky look; grey levels posterises before dithering.
-- **Tone:** brightness, contrast, gamma, sharpen, invert.
-- **Dither:** Bayer 2x2 / 4x4 / 8x8, clustered 4x4 / 8x8, Floyd-Steinberg, Atkinson,
-  or a plain threshold for line art. Cell scale enlarges the pattern, which holds up
-  better against heat spread on the paper.
-- **Views:** original, grey, decimated, dots (exactly the dots that will be printed)
-  and "on paper", a rough preview of how the dots spread. Zoom to 2x, 4x or 8x to judge
-  a dither; ctrl+wheel zooms.
-- **Exact values:** click any number to type a value. A clicked slider also steps by
-  one with the arrow keys or the mouse wheel, and a double-click resets it.
-- **Printer:** heat, speed, feed after, copies. The print button shows how much paper
-  the job uses; STOP halts sending immediately.
-- **Presets:** save the tone, dither and printer settings under a name, one per paper
-  or sticker stock, and pick it from the list next time.
-- **Library:** save an image with its settings and reload it later. Printed images are
-  added automatically. Saved items and presets go in a `library` folder next to the app.
+- Paste an image or drop it on the window. Drag it in the preview to move it.
+- Dots view is exactly what the head will burn. On paper is a rough guess at how the
+  heat spreads it.
+- The dots spread a little on paper. A bigger dither cell holds up better.
+- Click any number to type it. Click a slider and the arrow keys or mouse wheel move it
+  one step. Double click resets it.
+- A preset saves the image, dither and printer settings for one paper or sticker stock.
+  Size and position stay with the image.
+- Anything you print goes into the library. Library and presets live in a `library`
+  folder next to the app, so it all moves together.
 
 ## Run from source
 
-Needs Python 3.10 or newer.
+On Debian or Ubuntu:
+
+```
+sudo apt install python3-venv python3-gi gir1.2-webkit2-4.1
+sudo cp linux/70-x3print.rules /etc/udev/rules.d/
+sudo udevadm control --reload
+./x3print.sh
+```
+
+The udev rule lets you open the printer without root and keeps ModemManager off it.
+Replug the printer after adding it. The first run of `x3print.sh` sets up a `.venv`
+next to it. Without the WebKit packages the app opens in your browser instead.
+
+Anywhere else:
 
 ```
 pip install pyserial pywebview
 python -m x3print
 ```
 
-Build the single-file Windows app with `build.bat`; it lands in `dist\X3Print.exe`.
-
-There is also a command line, which needs `pillow` and `numpy` as well:
+`build.bat` builds the Windows exe. The command line version also needs `pillow` and
+`numpy`:
 
 ```
 python -m x3print status
 python -m x3print print photo.jpg --dither bayer2 --density 9
 ```
 
-## The printer protocol
+## The protocol
 
-Measured on one X3 (model string `X3-WBU...`). Other printers in the same family may
-work but are untested.
+Worked out on one X3. Others in the family might work. None have been tried.
 
 | | |
 |---|---|
@@ -69,17 +67,23 @@ work but are untested.
 | Frame | `64` cmd seq len(u16 LE) payload integrity(u32 LE) `9B` |
 | Integrity | `(0x12345678 + sum of all preceding bytes + 0x9B) & 0xFFFFFFFF` |
 | Head | 864 dots, 108 bytes per row, MSB first, 1 = black |
-| Raster | command `0x00`, whole 108-byte rows; four rows per frame prints without pauses |
-| Status | pushed as `0xFF` frames about three times a second: status bits, heat, auto-off, speed, battery % |
+| Raster | command `0x00`, whole 108 byte rows. Four rows per frame prints without pauses. |
+| Status | the printer sends `0xFF` frames about three times a second: status bits, heat, auto off, speed, battery % |
 | Commands | `0x12` model, `0x0A` speed, `0x09` heat, `0x28` paper type, `0x02` feed (dots) |
 
-Command `0x20` prints the self-test page straight away, so sending unknown command IDs
-to the printer is not a safe way to explore it.
+Command `0x20` prints the self test page the moment it arrives. Poking unknown command
+IDs will cost you paper.
+
+## Cyberdeck Cafe
+
+Built at the Cyberdeck Cafe. More projects and the Discord are on Neon City Mix.
+
+https://cyberdeck.cafe/
 
 ## Acknowledgements
 
-The YK frame format and the starting command set come from the Orgstra S001 driver in
-TiMini-Print (Apache-2.0):
+The frame format and the first set of commands came from the Orgstra S001 driver in
+TiMini-Print (Apache-2.0).
 
 https://github.com/Dejniel/TiMini-Print
 

@@ -18,6 +18,7 @@ class Worker(threading.Thread):
         self.lock = threading.Lock()
         self.p = None
         self.model = None
+        self.problem = None
         self.job = None
         self.cancel = threading.Event()
 
@@ -25,6 +26,7 @@ class Worker(threading.Thread):
         with self.lock:
             st = dict(self.p.last_status or {}) if self.p else {}
             st["connected"] = self.p is not None
+            st["problem"] = self.problem
             j = self.job
             st["job"] = j and {"rows": j["rows"] * j["copies"], "sent": j["sent"] + j["rows"] * j["copy"]}
             return st
@@ -47,8 +49,10 @@ class Worker(threading.Thread):
                     p = link.Printer()
                     m = p.model()
                     with self.lock:
-                        self.p, self.model = p, m
-                except OSError:
+                        self.p, self.model, self.problem = p, m, None
+                except OSError as e:
+                    self.problem = (None if not link.find_port() else
+                                    "permission denied" if "denied" in str(e).lower() else "it is busy or unplugged")
                     time.sleep(1.0)
                     continue
             try:
