@@ -151,6 +151,7 @@ dialog .ok { background:var(--green-dk); color:#fff; border-color:var(--green); 
       <div class="row"><label>rotate</label><div class="seg" data-for="rot"></div><input type="hidden" id="rot" value="0"></div>
       <div class="row"><label for="scale">scale</label><input type="range" id="scale" min="10" max="500" step="1" value="100"><output id="scale_o"></output></div>
       <div class="row"><label>position</label><div class="seg" data-for="posx"></div><input type="hidden" id="posx" value="0.5"><input type="hidden" id="posy" value="0.5"></div>
+      <div class="row" title="moves the print area to sit centred on your paper. saved with presets"><label for="offset">offset mm</label><input type="range" id="offset" min="-60" max="60" value="0"><output id="offset_o"></output></div>
 
       <h2>Image</h2>
       <div class="row"><label for="bright">brightness</label><input type="range" id="bright" min="-100" max="100" value="0"><output id="bright_o"></output></div>
@@ -279,7 +280,7 @@ const KERN = {
 
 const range = (a, b, s = 1) => Array.from({ length: Math.floor((b - a) / s) + 1 }, (_, i) => a + i * s);
 const FMT = {
-  scale: v => v + "%", bright: v => v, contrast: v => v,
+  scale: v => v + "%", offset: v => (v > 0 ? "+" : "") + (v / DPMM).toFixed(1), bright: v => v, contrast: v => v,
   gamma: v => (v / 100).toFixed(2), sharp: v => (v / 100).toFixed(1), thresh: v => v, speed: v => v,
   pix: v => v + "x", levels: v => v >= 64 ? "all" : v, feed: v => v + " mm", copies: v => v,
 };
@@ -344,7 +345,7 @@ for (const id of SET_IDS) {
   if (o) { o.classList.add("edit"); o.title = "click to type a value"; o.addEventListener("click", () => typeIn(id, o)); }
 }
 
-const UNIT = { gamma: 100, sharp: 100 };
+const UNIT = { gamma: 100, sharp: 100, offset: 300 / 25.4 };
 function typeIn(id, o) {
   const el = $(id), list = STEPS[id], inp = document.createElement("input");
   const lo = list ? list[0] : +el.min, hi = list ? list[list.length - 1] : +el.max;
@@ -423,7 +424,7 @@ const DB = (() => {
 })();
 try { navigator.storage.persist(); } catch {}
 
-const PRESET_IDS = ["bright", "contrast", "gamma", "sharp", "invert", "smooth", "pix", "levels", "dither", "cell", "thresh", "heat", "speed", "feed"];
+const PRESET_IDS = ["offset", "bright", "contrast", "gamma", "sharp", "invert", "smooth", "pix", "levels", "dither", "cell", "thresh", "heat", "speed", "feed"];
 let presets = {}, presetName = "";
 function curPreset() { const all = getSettings(); return Object.fromEntries(PRESET_IDS.map(k => [k, all[k]])); }
 function showPreset() {
@@ -590,7 +591,7 @@ function geometry() {
   const sc = S.scale / 100, pix = S.pix;
   const Wt = Math.max(8, Math.round(HEAD * sc)), Ht = Math.max(1, Math.round(sh * Wt / sw));
   const W = Math.min(Wt, HEAD), H = sc > 1 ? Math.min(Ht, Math.max(1, Math.round(sh * HEAD / sw))) : Ht;
-  const left = Math.round(S.posx * (HEAD - W));
+  const left = Math.min(HEAD - W, Math.max(0, Math.round(S.posx * (HEAD - W)) + S.offset));
   const ox = Math.round(S.posx * (Wt - W)), oy = Math.round(S.posy * (Ht - H));
   return { rot, pix, Wt, Ht, left, ox, oy, pw: Math.ceil(W / pix), ph: Math.ceil(H / pix), dotsW: W, dotsH: H };
 }
