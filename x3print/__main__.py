@@ -23,7 +23,7 @@ def cmd_print(a):
     with link.Printer(a.port) as p:
         for c in range(a.copies):
             t = time.time()
-            rows = p.print_rows(data, density=a.density, speed=a.speed, feed_mm=a.feed, rate=a.rate)
+            rows = p.print_rows(data, density=a.density, speed=a.speed, feed_mm=a.feed)
             print(f"copy {c + 1}: {rows} rows ({rows / raster.DOTS_PER_MM:.1f} mm) sent in {time.time() - t:.2f} s")
         end = time.time() + 2 + rows / 200
         while time.time() < end:
@@ -58,7 +58,6 @@ def main(argv=None):
     pr.add_argument("--align", choices=("left", "center", "right"), default="center")
     pr.add_argument("--density", type=int, default=9, help="heat, 1-15")
     pr.add_argument("--speed", type=int, default=100)
-    pr.add_argument("--rate", type=int, default=0, help="rows per second; 0 lets USB set the pace")
     pr.add_argument("--feed", type=float, default=8.0, help="mm fed after the image")
     pr.add_argument("--copies", type=int, default=1)
     pr.set_defaults(fn=cmd_print)

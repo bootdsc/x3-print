@@ -13,74 +13,94 @@
   --yellow:#ffe066;
 }
 * { box-sizing:border-box; }
-html, body { height:100%; margin:0; background:var(--bg); color:var(--gray-lt); font:14px "Segoe UI", system-ui, sans-serif; }
-.mono, output, .num { font-family:Consolas, "Cascadia Mono", monospace; }
-header { display:flex; align-items:center; gap:16px; padding:10px 16px; border-bottom:1px solid var(--border); background:var(--panel); flex-wrap:wrap; }
-header h1 { margin:0; font-size:16px; color:var(--green); font-weight:600; letter-spacing:.04em; }
-#status { font-family:Consolas, monospace; color:var(--gray); flex:1; min-width:200px; }
-#status b { color:var(--glow); font-weight:normal; }
-.err { color:var(--yellow); }
+html, body { height:100%; margin:0; background:var(--bg); color:var(--gray-lt); font:13px "Segoe UI", system-ui, sans-serif; }
 body { display:flex; flex-direction:column; }
-main { display:grid; grid-template-columns:minmax(0,1fr) 340px; flex:1; min-height:0; }
-@media (max-width:820px) { main { grid-template-columns:1fr; flex:none; } aside { border-left:0; border-top:1px solid var(--border); } }
-#stage { padding:16px; overflow:auto; min-height:0; display:flex; flex-direction:column; gap:10px; }
-#views { display:flex; gap:4px; flex-wrap:wrap; }
-#canvasWrap { flex:1; display:flex; justify-content:center; align-items:flex-start; background:var(--black); border:1px solid var(--border); padding:12px; min-height:0; overflow:auto; }
-#view { max-width:100%; max-height:100%; background:#fff; image-rendering:auto; }
-#view.zoomed { max-width:none; max-height:none; image-rendering:pixelated; }
-#canvasWrap.zoomed { justify-content:flex-start; cursor:grab; }
-#canvasWrap.zoomed.panning { cursor:grabbing; }
-@media (max-width:820px) { #view { max-height:70vh; } #canvasWrap { min-height:300px; } }
-aside, #views, #bar { user-select:none; -webkit-user-select:none; }
-#bar { display:flex; gap:6px; position:relative; }
+output, .mono { font-family:Consolas, "Cascadia Mono", monospace; }
+button, select { font:inherit; color:var(--gray-lt); background:var(--hex); border:1px solid var(--border); padding:3px 8px; cursor:pointer; }
+button:hover { background:var(--hover); border-color:var(--green-dim); }
+button:disabled { color:var(--gray); background:var(--hex); border-color:var(--border); cursor:default; }
+button:focus-visible, input:focus-visible { outline:2px solid var(--glow); outline-offset:1px; }
+.err { color:var(--yellow); }
+
+header { display:flex; align-items:baseline; gap:14px; padding:7px 12px; background:var(--panel); border-bottom:1px solid var(--border); }
+header h1 { margin:0; font-size:14px; color:var(--green); font-weight:600; letter-spacing:.06em; }
+#status { font-family:Consolas, monospace; color:var(--gray); }
+#status b { color:var(--glow); font-weight:normal; }
+
+main { flex:1; min-height:0; display:grid; grid-template-columns:320px minmax(0,1fr); }
+aside { background:var(--panel); border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0; user-select:none; }
+#controls { flex:1; overflow:auto; padding:4px 12px 8px; }
+h2 { margin:8px 0 3px; font-size:11px; font-weight:600; color:var(--green); letter-spacing:.1em; text-transform:uppercase;
+     display:flex; align-items:center; gap:8px; }
+h2::after { content:""; flex:1; height:1px; background:var(--border); }
+.row { display:grid; grid-template-columns:66px minmax(0,1fr) 44px; align-items:center; gap:6px; min-height:24px; margin:1px 0; }
+.row > label { color:var(--gray-lt); white-space:nowrap; }
+.row > output { text-align:right; color:var(--glow); }
+.row > .seg, .row > .step { grid-column:2 / 4; }
+input[type=range] { width:100%; margin:0; accent-color:var(--green); }
+.checks { display:flex; gap:14px; flex-wrap:wrap; min-height:24px; align-items:center; }
+.checks label { display:flex; gap:6px; align-items:center; cursor:pointer; }
+.checks input { accent-color:var(--green); width:15px; height:15px; margin:0; }
+
+.seg { display:flex; gap:2px; }
+.seg button { flex:1; min-width:0; padding:2px 0; text-align:center; }
+.seg.num button { font-family:Consolas, monospace; font-size:12px; }
+.seg.grid { margin-bottom:3px; }
+.seg.grid { display:grid; grid-template-columns:repeat(4, 1fr); }
+.seg button.on, #views button.on, #zooms button.on { background:var(--green-dk); color:#fff; border-color:var(--glow); font-weight:600; }
+.step { display:grid; grid-template-columns:28px 1fr 28px; gap:2px; }
+.step output { text-align:center; color:var(--glow); background:var(--black); border:1px solid var(--border); padding:2px 0; }
+.step button { padding:2px 0; }
+
+#go { border-top:1px solid var(--border); padding:6px 12px 8px; }
+#len { font-family:Consolas, monospace; color:var(--glow); margin:0 0 6px; }
+.gobtns { display:grid; grid-template-columns:1fr 84px; gap:6px; }
+#print { padding:10px; font-size:15px; background:var(--green-dk); color:#fff; border-color:var(--green); }
+#print:disabled { background:var(--hex); color:var(--gray); border-color:var(--border); }
+#stop { background:var(--black); border:2px solid var(--gray-lt); font-weight:700; letter-spacing:.06em; }
+#why { color:var(--gray); font-size:12px; min-height:1.3em; margin:5px 0 0; }
+#progress { height:4px; background:var(--hex); margin-top:4px; }
+#progress div { height:100%; width:0; background:var(--green); }
+
+#stage { display:flex; flex-direction:column; min-height:0; min-width:0; }
+#bar { display:flex; align-items:center; gap:6px; padding:6px 10px; border-bottom:1px solid var(--border); flex-wrap:wrap; position:relative; user-select:none; }
+#name { color:var(--gray-lt); max-width:28ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#saved { color:var(--gray); font-size:12px; }
 #bar .grow { flex:1; }
-#lib { position:absolute; top:calc(100% + 4px); left:0; z-index:20; width:min(760px, calc(100vw - 32px)); max-height:72vh;
+#views, #zooms { display:flex; gap:2px; }
+#zoomPct { width:5ch; text-align:right; color:var(--gray); }
+
+#canvasWrap { flex:1; min-height:0; overflow:auto; display:flex; background:var(--black); padding:12px; position:relative; }
+#canvasWrap.pan { cursor:grab; }
+#canvasWrap.panning { cursor:grabbing; }
+#canvasWrap.over { outline:2px dashed var(--glow); outline-offset:-6px; }
+#view { margin:auto; flex-shrink:0; outline:1px solid var(--border); image-rendering:auto; }
+#view.px { image-rendering:pixelated; }
+#view[hidden] { display:none; }
+#empty { margin:auto; text-align:center; color:var(--gray); cursor:pointer; padding:40px; border:1px dashed var(--green-dim); }
+#empty b { display:block; color:var(--gray-lt); font-size:16px; font-weight:normal; margin-bottom:6px; }
+#empty[hidden] { display:none; }
+#viewHint { margin:0; padding:5px 10px; color:var(--gray); font-size:12px; border-top:1px solid var(--border); }
+
+#lib { position:absolute; top:calc(100% + 2px); left:10px; z-index:20; width:min(760px, calc(100% - 20px)); max-height:72vh;
        display:flex; flex-direction:column; background:var(--panel); border:1px solid var(--green-dim); box-shadow:0 8px 30px #000; }
 #lib[hidden] { display:none; }
-#libGrid { overflow:auto; padding:10px; display:grid; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); gap:10px; }
-.card { background:var(--hex); border:1px solid var(--border); padding:6px; cursor:pointer; display:flex; flex-direction:column; gap:4px; text-align:left; color:inherit; font:inherit; }
-.card:hover, .card:focus-visible { background:var(--hover); border-color:var(--green-dim); }
-.card img { width:100%; height:220px; object-fit:contain; background:#fff; display:block; }
-.card .nm { color:var(--gray-lt); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.card .meta { color:var(--gray); font-size:12px; font-family:Consolas, monospace; }
+#libGrid { overflow:auto; padding:10px; display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; }
+.card { background:var(--hex); border:1px solid var(--border); padding:6px; display:flex; flex-direction:column; gap:3px; text-align:left; }
+.card img { width:100%; height:180px; object-fit:contain; background:#fff; display:block; }
+.card .nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.card .meta { color:var(--gray); font-size:11px; font-family:Consolas, monospace; }
 .card.sel { border:2px solid var(--glow); background:var(--active); }
 .card .tick { font-family:Consolas, monospace; color:var(--glow); }
-#libFoot { display:flex; gap:8px; align-items:center; padding:8px 10px; border-top:1px solid var(--border); flex-wrap:wrap; }
+#libFoot { display:flex; gap:6px; align-items:center; padding:8px 10px; border-top:1px solid var(--border); flex-wrap:wrap; }
 #libFoot .msg { flex:1; color:var(--gray); font-size:12px; }
 #libEmpty { padding:20px; color:var(--gray); grid-column:1 / -1; }
-#drop { border:1px dashed var(--green-dim); padding:28px 16px; text-align:center; color:var(--gray); cursor:pointer; }
-#drop.over { background:var(--active); color:var(--glow); }
-aside { background:var(--panel); border-left:1px solid var(--border); padding:12px 14px 0; overflow:auto; }
+
 @media (max-width:820px) {
-  aside { overflow:visible; padding-bottom:150px; }
-  aside #go { position:fixed; left:0; right:0; bottom:0; margin:0; z-index:5; }
-  #go .stop { padding:6px; }
+  main { grid-template-columns:1fr; grid-template-rows:auto 70vh; overflow:auto; }
+  aside { border-right:0; border-bottom:1px solid var(--border); }
+  #controls { overflow:visible; }
 }
-#go { position:sticky; bottom:0; background:var(--panel); border-top:1px solid var(--border); margin:0 -14px; padding:8px 14px 12px; }
-fieldset { border:1px solid var(--border); margin:0 0 12px; padding:8px 10px 10px; }
-legend { color:var(--green); padding:0 6px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
-.row { display:grid; grid-template-columns:92px minmax(0,1fr) 48px; align-items:center; gap:8px; margin:5px 0; }
-.row label { color:var(--gray-lt); }
-.row output { text-align:right; color:var(--glow); }
-input[type=range] { width:100%; accent-color:var(--green); }
-select { width:100%; min-width:0; }
-select, button, input[type=number] { font:inherit; background:var(--hex); color:var(--gray-lt); border:1px solid var(--border); padding:5px 8px; }
-select:focus, button:focus-visible, input:focus-visible { outline:2px solid var(--glow); outline-offset:1px; }
-button { cursor:pointer; }
-button:hover { background:var(--hover); }
-button.on { background:var(--active); color:var(--glow); border-color:var(--green-dim); }
-button.on::before { content:"\25A0 "; }
-button.go { width:100%; padding:12px; font-size:16px; background:var(--green-dk); color:#fff; border-color:var(--green); margin-top:6px; }
-button.go:disabled { background:var(--hex); color:var(--gray); border-color:var(--border); cursor:not-allowed; }
-button.stop { width:100%; padding:10px; margin-top:6px; background:var(--black); color:var(--gray-lt); border:2px solid var(--gray-lt); font-weight:600; }
-.check { display:flex; gap:8px; align-items:center; margin:5px 0; }
-.check input { accent-color:var(--green); width:16px; height:16px; }
-.hint { color:var(--gray); font-size:12px; margin:4px 0 0; }
-#len { font-family:Consolas, monospace; color:var(--glow); margin:6px 0 0; }
-#why { color:var(--gray); font-size:12px; min-height:1em; margin:4px 0 0; }
-#progress { height:6px; background:var(--hex); border:1px solid var(--border); margin-top:8px; }
-#progress div { height:100%; width:0; background:var(--green); }
-.seg { display:flex; gap:4px; flex-wrap:wrap; }
 </style>
 </head>
 <body>
@@ -89,12 +109,73 @@ button.stop { width:100%; padding:10px; margin-top:6px; background:var(--black);
   <div id="status">connecting...</div>
 </header>
 <main>
+  <aside>
+    <div id="controls">
+      <h2>Size</h2>
+      <div class="checks"><label><input type="checkbox" id="longways" checked>long side down the paper</label></div>
+      <div class="row"><label>rotate</label><div class="seg" data-for="rot"></div><input type="hidden" id="rot" value="0"></div>
+      <div class="row"><label for="width">width</label><input type="range" id="width" min="10" max="100" value="100"><output id="width_o"></output></div>
+      <div class="row"><label>align</label><div class="seg" data-for="align"></div><input type="hidden" id="align" value="center"></div>
+
+      <h2>Image</h2>
+      <div class="row"><label for="bright">brightness</label><input type="range" id="bright" min="-100" max="100" value="0"><output id="bright_o"></output></div>
+      <div class="row"><label for="contrast">contrast</label><input type="range" id="contrast" min="-100" max="200" value="0"><output id="contrast_o"></output></div>
+      <div class="row"><label for="gamma">gamma</label><input type="range" id="gamma" min="30" max="300" value="100"><output id="gamma_o"></output></div>
+      <div class="row"><label for="sharp">sharpen</label><input type="range" id="sharp" min="0" max="300" value="0"><output id="sharp_o"></output></div>
+      <div class="checks">
+        <label><input type="checkbox" id="invert">invert</label>
+        <label><input type="checkbox" id="smooth" checked>smooth scaling</label>
+      </div>
+      <div class="row" title="each image pixel prints as an N x N block of dots"><label>pixel size</label><div class="step" data-for="pix"></div><input type="hidden" id="pix" value="1"></div>
+      <div class="row" title="posterise to this many greys before dithering"><label>grey levels</label><div class="step" data-for="levels"></div><input type="hidden" id="levels" value="64"></div>
+
+      <h2>Dither</h2>
+      <div class="seg grid" data-for="dither"></div><input type="hidden" id="dither" value="bayer2">
+      <div class="row" title="larger cells: coarser texture, holds up better against heat spread"><label>cell size</label><div class="seg num" data-for="cell"></div><input type="hidden" id="cell" value="1"></div>
+      <div class="row"><label for="thresh">threshold</label><input type="range" id="thresh" min="1" max="99" value="50"><output id="thresh_o"></output></div>
+      <p id="levelsNote" class="err" hidden></p>
+
+      <h2>Printer</h2>
+      <div class="row"><label>heat</label><div class="seg num" data-for="heat"></div><input type="hidden" id="heat" value="7"></div>
+      <div class="row"><label for="speed">speed</label><input type="range" id="speed" min="10" max="100" value="100"><output id="speed_o"></output></div>
+      <div class="row"><label>feed after</label><div class="step" data-for="feed"></div><input type="hidden" id="feed" value="8"></div>
+      <div class="row"><label>copies</label><div class="step" data-for="copies"></div><input type="hidden" id="copies" value="1"></div>
+    </div>
+    <div id="go">
+      <p id="len">no image</p>
+      <div class="gobtns">
+        <button id="print" disabled>print</button>
+        <button id="stop">STOP</button>
+      </div>
+      <p id="why"></p>
+      <div id="progress"><div></div></div>
+    </div>
+  </aside>
+
   <section id="stage">
     <div id="bar">
+      <button id="open">open...</button>
       <button id="libBtn" aria-expanded="false">library &#9662;</button>
       <button id="save" disabled>save</button>
+      <span id="name"></span>
+      <span id="saved"></span>
       <span class="grow"></span>
-      <span class="hint" id="saved"></span>
+      <div id="views">
+        <button data-v="original">original</button>
+        <button data-v="gray">grey</button>
+        <button data-v="decimated">decimated</button>
+        <button data-v="dithered" class="on">dots</button>
+        <button data-v="thermal">on paper</button>
+      </div>
+      <div id="zooms">
+        <button data-z="0" class="on">fit</button>
+        <button data-z="1">1:1</button>
+        <button data-z="2">2x</button>
+        <button data-z="4">4x</button>
+        <button data-z="8">8x</button>
+      </div>
+      <span id="zoomPct" class="mono"></span>
+      <input id="file" type="file" accept="image/*" hidden>
       <div id="lib" hidden>
         <div id="libGrid"></div>
         <div id="libFoot">
@@ -106,100 +187,21 @@ button.stop { width:100%; padding:10px; margin-top:6px; background:var(--black);
         </div>
       </div>
     </div>
-    <div id="drop" tabindex="0">drop an image here, paste one, or tap to choose
-      <input id="file" type="file" accept="image/*" hidden>
+    <div id="canvasWrap">
+      <div id="empty"><b>drop an image here</b>or paste one, or click to open a file</div>
+      <canvas id="view" width="864" height="200" hidden></canvas>
     </div>
-    <div id="views" class="seg" role="tablist">
-      <button data-v="original">original</button>
-      <button data-v="gray">grayscale</button>
-      <button data-v="decimated">decimated</button>
-      <button data-v="dithered" class="on">dithered</button>
-      <button data-v="thermal">on paper</button>
-      <span style="flex:1"></span>
-      <button data-z="0" class="on">fit</button>
-      <button data-z="1">1x</button>
-      <button data-z="2">2x</button>
-      <button data-z="4">4x</button>
-    </div>
-    <div id="canvasWrap"><canvas id="view" width="864" height="200"></canvas></div>
-    <p class="hint" id="viewHint"></p>
+    <p id="viewHint"></p>
   </section>
-
-  <aside>
-    <fieldset>
-      <legend>Size</legend>
-      <div class="check"><input type="checkbox" id="longways" checked><label for="longways">long side down the paper</label></div>
-      <div class="row"><label for="rot">rotate</label>
-        <select id="rot"><option value="0">0</option><option value="90">90</option><option value="180">180</option><option value="270">270</option></select><span></span></div>
-      <div class="row"><label for="width">width</label><input type="range" id="width" min="10" max="100" value="100"><output class="num" id="width_o"></output></div>
-      <div class="row"><label for="align">align</label>
-        <select id="align"><option>center</option><option>left</option><option>right</option></select><span></span></div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Decimate</legend>
-      <div class="row"><label for="pix">pixel size</label><input type="range" id="pix" min="1" max="16" value="1"><output class="num" id="pix_o"></output></div>
-      <div class="row"><label for="levels">grey levels</label><input type="range" id="levels" min="2" max="64" value="64"><output class="num" id="levels_o"></output></div>
-      <div class="check"><input type="checkbox" id="smooth" checked><label for="smooth">smooth downscale</label></div>
-      <p class="hint">pixel size crushes resolution: each image pixel prints as an N x N block of dots.</p>
-    </fieldset>
-
-    <fieldset>
-      <legend>Tone</legend>
-      <div class="row"><label for="bright">brightness</label><input type="range" id="bright" min="-100" max="100" value="0"><output class="num" id="bright_o"></output></div>
-      <div class="row"><label for="contrast">contrast</label><input type="range" id="contrast" min="-100" max="200" value="0"><output class="num" id="contrast_o"></output></div>
-      <div class="row"><label for="gamma">gamma</label><input type="range" id="gamma" min="30" max="300" value="100"><output class="num" id="gamma_o"></output></div>
-      <div class="row"><label for="sharp">sharpen</label><input type="range" id="sharp" min="0" max="300" value="0"><output class="num" id="sharp_o"></output></div>
-      <div class="check"><input type="checkbox" id="invert"><label for="invert">invert</label></div>
-    </fieldset>
-
-    <fieldset>
-      <legend>Dither</legend>
-      <div class="row"><label for="dither">pattern</label>
-        <select id="dither">
-          <option value="bayer2" selected>bayer 2x2 - 5 levels</option>
-          <option value="bayer4">bayer 4x4 - 17 levels</option>
-          <option value="bayer8">bayer 8x8 - 65 levels</option>
-          <option value="cluster4">cluster 4x4 - blobs</option>
-          <option value="cluster8">cluster 8x8 45deg</option>
-          <option value="floyd">floyd-steinberg</option>
-          <option value="atkinson">atkinson</option>
-          <option value="threshold">threshold</option>
-        </select><span></span></div>
-      <div class="row"><label for="cell">cell scale</label><input type="range" id="cell" min="1" max="6" value="1"><output class="num" id="cell_o"></output></div>
-      <div class="row"><label for="thresh">threshold</label><input type="range" id="thresh" min="1" max="99" value="50"><output class="num" id="thresh_o"></output></div>
-      <p class="hint" id="levelsNote"></p>
-      <p class="hint">cell scale grows each dither cell to N x N dots: coarser texture, but holds up better against thermal spread.</p>
-    </fieldset>
-
-    <fieldset>
-      <legend>Printer</legend>
-      <div class="row"><label for="density">heat</label><input type="range" id="density" min="1" max="15" value="9"><output class="num" id="density_o"></output></div>
-      <div class="row"><label for="speed">speed</label><input type="range" id="speed" min="10" max="100" value="100"><output class="num" id="speed_o"></output></div>
-      <div class="row"><label for="rate">row pacing</label><input type="range" id="rate" min="0" max="240" step="10" value="0"><output class="num" id="rate_o"></output></div>
-      <div class="row"><label for="feed">feed after</label><input type="range" id="feed" min="0" max="40" value="8"><output class="num" id="feed_o"></output></div>
-      <div class="row"><label for="copies">copies</label><input type="range" id="copies" min="1" max="10" value="1"><output class="num" id="copies_o"></output></div>
-      <p class="hint">row pacing 0 lets the printer set the pace over USB; a fixed rate avoids stop-start lines on dark prints.</p>
-    </fieldset>
-    <div id="go">
-      <p id="len"></p>
-      <button class="go" id="print" disabled>print</button>
-      <p id="why"></p>
-      <button class="stop" id="stop">STOP</button>
-      <div id="progress"><div></div></div>
-    </div>
-  </aside>
 </main>
 
 <script>
 "use strict";
 const HEAD = 864, ROWB = 108, DPMM = 300 / 25.4;
 const $ = id => document.getElementById(id);
+const heat = () => Math.round(1 + (S.heat - 1) * 1.4);
 const S = {};
-let src = null;
-let view = "dithered";
-let out = null;
-let printer = null, busy = false;
+let src = null, view = "dithered", out = null, printer = null, busy = false;
 
 function bayer(n) {
   if (n === 1) return [[0]];
@@ -222,54 +224,63 @@ const KERN = {
   atkinson: [[1,0,1/8],[2,0,1/8],[-1,1,1/8],[0,1,1/8],[1,1,1/8],[0,2,1/8]],
 };
 
+const range = (a, b, s = 1) => Array.from({ length: Math.floor((b - a) / s) + 1 }, (_, i) => a + i * s);
 const FMT = {
-  width: v => v + "%", pix: v => v + "x", levels: v => v >= 64 ? "all" : v, bright: v => v, contrast: v => v,
-  gamma: v => (v / 100).toFixed(2), sharp: v => (v / 100).toFixed(1), cell: v => v + "x", thresh: v => v,
-  density: v => v, speed: v => v, rate: v => v == 0 ? "auto" : v + "/s", feed: v => v + "mm", copies: v => v,
+  width: v => v + "%", bright: v => v, contrast: v => v,
+  gamma: v => (v / 100).toFixed(2), sharp: v => (v / 100).toFixed(1), thresh: v => v, speed: v => v,
+  pix: v => v + "x", levels: v => v >= 64 ? "all" : v, feed: v => v + " mm", copies: v => v,
 };
-const PRINT_ONLY = new Set(["density", "speed", "rate", "feed", "copies"]);
-for (const id of Object.keys(FMT)) {
+const STEPS = { pix: range(1, 16), levels: [2, 3, 4, 5, 6, 8, 12, 16, 24, 32, 64], feed: range(0, 40, 2), copies: range(1, 10) };
+const SEGS = {
+  rot: [0, 90, 180, 270].map(v => [v, v + "°"]),
+  align: ["left", "center", "right"].map(v => [v, v]),
+  cell: range(1, 6).map(v => [v, v + "x"]),
+  heat: range(1, 11).map(v => [v, v]),
+  dither: [["bayer2", "bayer 2"], ["bayer4", "bayer 4"], ["bayer8", "bayer 8"], ["cluster4", "cluster 4"],
+           ["cluster8", "cluster 8"], ["floyd", "floyd"], ["atkinson", "atkinson"], ["threshold", "none"]],
+};
+const TEXT = new Set(["align", "dither"]);
+const PRINT_ONLY = new Set(["speed", "feed", "copies"]);
+const CHECKS = ["longways", "invert", "smooth"];
+const SET_IDS = [...Object.keys(FMT), ...Object.keys(SEGS), ...CHECKS];
+
+function setVal(id, v) { const el = $(id); el.value = v; el.dispatchEvent(new Event("input", { bubbles: true })); }
+
+for (const [id, opts] of Object.entries(SEGS)) {
+  const box = document.querySelector(`.seg[data-for="${id}"]`);
+  for (const [v, label] of opts) {
+    const b = document.createElement("button");
+    b.textContent = label; b.dataset.v = v;
+    b.addEventListener("click", () => setVal(id, v));
+    box.append(b);
+  }
+}
+for (const [id, list] of Object.entries(STEPS)) {
+  const box = document.querySelector(`.step[data-for="${id}"]`);
+  const dn = document.createElement("button"), up = document.createElement("button"), o = document.createElement("output");
+  dn.textContent = "−"; up.textContent = "+"; o.id = id + "_o";
+  dn.addEventListener("click", () => { const v = +$(id).value, p = list.filter(x => x < v); if (p.length) setVal(id, p[p.length - 1]); });
+  up.addEventListener("click", () => { const v = +$(id).value, n = list.find(x => x > v); if (n !== undefined) setVal(id, n); });
+  box.append(dn, o, up);
+}
+for (const id of SET_IDS) {
   const el = $(id);
-  const sync = () => { S[id] = +el.value; $(id + "_o").textContent = FMT[id](S[id]); };
+  const sync = () => {
+    if (!TEXT.has(id) && !CHECKS.includes(id)) S[id] = +el.value;
+    const o = $(id + "_o");
+    if (o) o.textContent = FMT[id](S[id]);
+    const box = document.querySelector(`.seg[data-for="${id}"]`);
+    if (box) for (const b of box.children) b.classList.toggle("on", b.dataset.v === String(el.value));
+  };
   sync();
-  el.addEventListener("input", () => { sync(); PRINT_ONLY.has(id) && id !== "density" ? showLength() : schedule(); });
-}
-for (const id of ["rot", "align", "dither", "longways", "invert", "smooth"])
-  $(id).addEventListener("input", schedule);
-for (const b of document.querySelectorAll("#views button[data-v]"))
-  b.addEventListener("click", () => {
-    view = b.dataset.v;
-    for (const o of document.querySelectorAll("#views button[data-v]")) o.classList.toggle("on", o === b);
-    draw();
+  el.addEventListener("input", () => {
+    sync();
+    if (PRINT_ONLY.has(id)) showLength();
+    else if (id === "heat") { if (view === "thermal") draw(); }
+    else schedule();
   });
-let zoom = 0;
-function applyZoom() {
-  const cv = $("view"), wrap = $("canvasWrap");
-  cv.classList.toggle("zoomed", zoom > 0); wrap.classList.toggle("zoomed", zoom > 0);
-  cv.style.width = zoom ? (cv.width * zoom / devicePixelRatio) + "px" : "";
-  cv.style.height = zoom ? (cv.height * zoom / devicePixelRatio) + "px" : "";
+  if (el.type === "range") el.addEventListener("dblclick", () => setVal(id, el.defaultValue));
 }
-for (const b of document.querySelectorAll("#views button[data-z]"))
-  b.addEventListener("click", () => {
-    const wrap = $("canvasWrap"), old = zoom || 0;
-    const fx = (wrap.scrollLeft + wrap.clientWidth / 2) / Math.max(1, wrap.scrollWidth);
-    const fy = (wrap.scrollTop + wrap.clientHeight / 2) / Math.max(1, wrap.scrollHeight);
-    zoom = +b.dataset.z;
-    for (const o of document.querySelectorAll("#views button[data-z]")) o.classList.toggle("on", o === b);
-    applyZoom();
-    if (zoom && old) { wrap.scrollLeft = fx * wrap.scrollWidth - wrap.clientWidth / 2; wrap.scrollTop = fy * wrap.scrollHeight - wrap.clientHeight / 2; }
-  });
-{
-  const wrap = $("canvasWrap"); let pan = null;
-  wrap.addEventListener("pointerdown", e => {
-    if (!zoom) return;
-    pan = { x: e.clientX, y: e.clientY, l: wrap.scrollLeft, t: wrap.scrollTop };
-    wrap.setPointerCapture(e.pointerId); wrap.classList.add("panning"); e.preventDefault();
-  });
-  wrap.addEventListener("pointermove", e => { if (pan) { wrap.scrollLeft = pan.l - (e.clientX - pan.x); wrap.scrollTop = pan.t - (e.clientY - pan.y); } });
-  for (const ev of ["pointerup", "pointercancel"]) wrap.addEventListener(ev, () => { pan = null; wrap.classList.remove("panning"); });
-}
-document.addEventListener("dragstart", e => e.preventDefault());
 
 let srcBlob = null, srcName = "", libId = null, libSettings = null;
 function loadFile(f, opts = {}) {
@@ -278,7 +289,7 @@ function loadFile(f, opts = {}) {
   im.onload = () => {
     src = im; srcBlob = f; srcName = opts.name || f.name || "pasted image";
     libId = opts.id || null; libSettings = opts.settings ? JSON.stringify(opts.settings) : null;
-    $("drop").firstChild.textContent = srcName;
+    $("name").textContent = srcName; $("name").title = srcName;
     if (opts.settings) setSettings(opts.settings);
     $("save").disabled = false; markSaved();
     schedule();
@@ -286,7 +297,6 @@ function loadFile(f, opts = {}) {
   im.src = url;
 }
 
-const SET_IDS = [...Object.keys(FMT), "rot", "align", "dither", "longways", "invert", "smooth"];
 function getSettings() {
   const s = {};
   for (const id of SET_IDS) { const el = $(id); s[id] = el.type === "checkbox" ? el.checked : el.value; }
@@ -301,7 +311,7 @@ function setSettings(s) {
   }
 }
 const unchanged = () => libId && libSettings === JSON.stringify(getSettings());
-function markSaved() { $("saved").textContent = !src ? "" : unchanged() ? "saved in library" : libId ? "changed since saved" : "not saved"; }
+function markSaved() { $("saved").textContent = !src ? "" : unchanged() ? "saved" : libId ? "changed since saved" : "not saved"; }
 document.querySelector("aside").addEventListener("input", () => requestAnimationFrame(markSaved));
 
 function thumbB64() {
@@ -342,7 +352,7 @@ async function saveItem(printed) {
 $("save").addEventListener("click", async () => {
   const name = prompt("Name for this print:", srcName.replace(/\.[a-z0-9]+$/i, ""));
   if (name === null) return;
-  if (name.trim()) srcName = name.trim();
+  if (name.trim()) { srcName = name.trim(); $("name").textContent = srcName; }
   libSettings = null;
   await saveItem(false);
 });
@@ -352,7 +362,7 @@ async function openLib() {
   $("lib").hidden = false; $("libBtn").setAttribute("aria-expanded", "true");
   const items = await (await fetch("/library", { cache: "no-store" })).json();
   const grid = $("libGrid"); grid.innerHTML = "";
-  if (!items.length) { grid.innerHTML = '<div id="libEmpty">nothing saved yet. save or print something and it shows up here.</div>'; }
+  if (!items.length) grid.innerHTML = '<div id="libEmpty">nothing saved yet. save or print something and it shows up here.</div>';
   for (const it of items) {
     const b = document.createElement("button"); b.className = "card" + (delSel.has(it.id) ? " sel" : "");
     const d = new Date(it.updated * 1000);
@@ -387,12 +397,14 @@ $("delGo").addEventListener("click", async () => {
   delMode = false; delSel.clear(); markSaved(); openLib();
 });
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("lib").hidden) closeLib(); });
-$("drop").addEventListener("click", () => $("file").click());
-$("drop").addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") $("file").click(); });
-$("file").addEventListener("change", e => loadFile(e.target.files[0]));
+
+$("open").addEventListener("click", () => $("file").click());
+$("empty").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
+document.addEventListener("dragstart", e => e.preventDefault());
 const isFileDrag = e => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
-for (const ev of ["dragenter", "dragover"]) document.addEventListener(ev, e => { if (!isFileDrag(e)) return; e.preventDefault(); $("drop").classList.add("over"); });
-for (const ev of ["dragleave", "drop"]) document.addEventListener(ev, e => { if (!isFileDrag(e)) return; e.preventDefault(); $("drop").classList.remove("over"); });
+for (const ev of ["dragenter", "dragover"]) document.addEventListener(ev, e => { if (!isFileDrag(e)) return; e.preventDefault(); $("canvasWrap").classList.add("over"); });
+for (const ev of ["dragleave", "drop"]) document.addEventListener(ev, e => { if (!isFileDrag(e)) return; e.preventDefault(); $("canvasWrap").classList.remove("over"); });
 document.addEventListener("drop", e => { if (isFileDrag(e)) loadFile(e.dataTransfer.files[0]); });
 document.addEventListener("paste", e => { for (const it of e.clipboardData.items) if (it.type.startsWith("image/")) loadFile(it.getAsFile()); });
 
@@ -431,23 +443,21 @@ function run() {
   const b = S.bright / 200, k = 1 + S.contrast / 100, ig = 1 / (S.gamma / 100), inv = $("invert").checked;
   let tone = new Float32Array(n);
   for (let i = 0; i < n; i++) {
-    let v = (lum[i] - 0.5) * k + 0.5 + b;
-    v = Math.pow(Math.min(1, Math.max(0, v)), ig);
+    const v = Math.pow(Math.min(1, Math.max(0, (lum[i] - 0.5) * k + 0.5 + b)), ig);
     tone[i] = inv ? 1 - v : v;
   }
   if (S.sharp > 0) tone = sharpen(tone, g.pw, g.ph, S.sharp / 100);
 
-  const L = S.levels, dec = new Float32Array(n);
-  for (let i = 0; i < n; i++) dec[i] = L >= 64 ? tone[i] : Math.round(tone[i] * (L - 1)) / (L - 1);
+  const L = S.levels, dec = L >= 64 ? tone : tone.map(v => Math.round(v * (L - 1)) / (L - 1));
 
   const W = g.dotsW, H = g.dotsH, bits = new Uint8Array(W * H);
   const mode = $("dither").value, cell = S.cell, th = S.thresh / 100;
   if (MATS[mode]) {
     const m = MATS[mode], N = m.length, NN = N * N, bias = th - 0.5;
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const v = dec[((y / g.pix) | 0) * g.pw + ((x / g.pix) | 0)];
-      const t = (m[((y / cell) | 0) % N][((x / cell) | 0) % N] + 0.5) / NN + bias;
-      bits[y * W + x] = v < t ? 1 : 0;
+    for (let y = 0; y < H; y++) {
+      const row = ((y / g.pix) | 0) * g.pw, mr = m[((y / cell) | 0) % N];
+      for (let x = 0; x < W; x++)
+        bits[y * W + x] = dec[row + ((x / g.pix) | 0)] < (mr[((x / cell) | 0) % N] + 0.5) / NN + bias ? 1 : 0;
     }
   } else {
     const cw = Math.ceil(W / cell), ch = Math.ceil(H / cell), e = new Float32Array(cw * ch);
@@ -466,9 +476,9 @@ function run() {
     }
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) bits[y * W + x] = c1[((y / cell) | 0) * cw + ((x / cell) | 0)];
   }
-  $("levelsNote").textContent = L === 2
-    ? "grey levels is 2: the image is already black and white, so every pattern prints the same. raise grey levels to dither."
-    : L < 64 ? `grey levels is ${L}: the dither only blends between those ${L} steps.` : "";
+  const note = $("levelsNote");
+  note.hidden = L !== 2;
+  note.textContent = "grey levels is 2, so every pattern prints the same. raise it to dither.";
   out = { g, rgba, tone, dec, bits, W, H };
   draw(); showLength();
 }
@@ -488,52 +498,113 @@ function sharpen(a, w, h, amt) {
 }
 
 const HINTS = {
-  original: "the source in colour, at the resolution it will be sampled at.",
-  gray: "luminance after brightness, contrast, gamma, sharpen and invert.",
-  decimated: "after the grey-level and pixel-size crush, before dithering.",
-  dithered: "exactly the dots that will burn, 1 = black. this is what is sent.",
-  thermal: "simulated on paper: each dot spreads with heat. an approximation.",
+  original: "the image in colour, at the resolution it is sampled at.",
+  gray: "brightness, contrast, gamma, sharpen and invert applied.",
+  decimated: "after pixel size and grey levels, before dithering.",
+  dithered: "exactly the dots that will print.",
+  thermal: "a rough guess at how the dots spread on paper at this heat.",
 };
-const ZOOM_HINT = " fit blends the dots into grey; zoom to 2x or 4x to see the dither pattern. drag to pan.";
+const MARGIN = (() => {
+  const m = MATS.bayer4, rows = [];
+  for (let y = 0; y < 4; y++) { rows.push([]); for (let x = 0; x < 4; x++) rows[y].push((m[y][x] + 0.5) / 16 < 0.7 ? 0 : 255); }
+  return rows;
+})();
 function draw() {
   if (!out) return;
   const { g, W, H } = out, cv = $("view"), x = cv.getContext("2d");
-  $("viewHint").textContent = HINTS[view] + (zoom ? "" : ZOOM_HINT);
-  cv.width = HEAD; cv.height = H; applyZoom();
-  x.fillStyle = "#fff"; x.fillRect(0, 0, HEAD, H);
-  const left = offset(W);
-  const img = x.createImageData(W, H), p = img.data;
-  const put = (i, v) => { p[4*i] = p[4*i+1] = p[4*i+2] = v; p[4*i+3] = 255; };
-  if (view === "dithered") for (let i = 0; i < W * H; i++) put(i, out.bits[i] ? 0 : 255);
-  else if (view === "thermal") thermal(p, W, H);
-  else {
-    const srcA = view === "gray" ? out.tone : view === "decimated" ? out.dec : null;
-    for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) {
-      const si = Math.min(g.ph - 1, (y / g.pix) | 0) * g.pw + Math.min(g.pw - 1, (xx / g.pix) | 0), i = y * W + xx;
-      if (srcA) put(i, srcA[si] * 255);
-      else { const d = out.rgba.data; p[4*i] = d[4*si]; p[4*i+1] = d[4*si+1]; p[4*i+2] = d[4*si+2]; p[4*i+3] = 255; }
+  $("empty").hidden = true; cv.hidden = false;
+  $("viewHint").textContent = HINTS[view] + " the patterned strip is paper that stays blank. ctrl+wheel zooms, drag pans.";
+  if (cv.width !== HEAD || cv.height !== H) { cv.width = HEAD; cv.height = H; }
+  const left = offset(W), img = x.createImageData(HEAD, H), p = img.data;
+  for (let y = 0; y < H; y++) for (let xx = 0; xx < HEAD; xx++) {
+    const i = 4 * (y * HEAD + xx);
+    p[i] = p[i+1] = p[i+2] = MARGIN[y & 3][xx & 3]; p[i+3] = 255;
+  }
+  const put = (xx, y, v) => { const i = 4 * (y * HEAD + xx + left); p[i] = p[i+1] = p[i+2] = v; };
+  if (view === "dithered") {
+    for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) put(xx, y, out.bits[y * W + xx] ? 0 : 255);
+  } else if (view === "thermal") {
+    const t = thermal(W, H);
+    for (let y = 0; y < H; y++) for (let xx = 0; xx < W; xx++) put(xx, y, t[y * W + xx]);
+  } else {
+    const srcA = view === "gray" ? out.tone : view === "decimated" ? out.dec : null, d = out.rgba.data;
+    for (let y = 0; y < H; y++) {
+      const row = Math.min(g.ph - 1, (y / g.pix) | 0) * g.pw;
+      for (let xx = 0; xx < W; xx++) {
+        const si = row + Math.min(g.pw - 1, (xx / g.pix) | 0);
+        if (srcA) put(xx, y, srcA[si] * 255);
+        else { const i = 4 * (y * HEAD + xx + left); p[i] = d[4*si]; p[i+1] = d[4*si+1]; p[i+2] = d[4*si+2]; }
+      }
     }
   }
-  x.putImageData(img, left, 0);
-  x.fillStyle = "#8a8a8a"; x.fillRect(0, 0, 1, H); x.fillRect(HEAD - 1, 0, 1, H);
+  x.putImageData(img, 0, 0);
+  layoutView();
 }
 
-function thermal(p, W, H) {
-  const r = 0.35 + S.density * 0.06, rad = Math.ceil(r * 2), ker = [];
+function thermal(W, H) {
+  const h = heat(), r = 0.35 + h * 0.06, rad = Math.ceil(r * 2), ker = [];
   let ks = 0;
   for (let i = -rad; i <= rad; i++) { const v = Math.exp(-(i * i) / (2 * r * r)); ker.push(v); ks += v; }
-  const a = new Float32Array(W * H), t = new Float32Array(W * H);
-  for (let i = 0; i < W * H; i++) a[i] = out.bits[i];
+  const a = out.bits, t = new Float32Array(W * H), o = new Uint8ClampedArray(W * H);
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let s = 0; for (let k = -rad; k <= rad; k++) { const xx = Math.min(W - 1, Math.max(0, x + k)); s += a[y * W + xx] * ker[k + rad]; }
+    let s = 0; for (let k = -rad; k <= rad; k++) s += a[y * W + Math.min(W - 1, Math.max(0, x + k))] * ker[k + rad];
     t[y * W + x] = s / ks;
   }
-  const gain = 1.6 + S.density * 0.12, ink = 20, paper = 244;
+  const gain = 1.6 + h * 0.12, ink = 20, paper = 244;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    let s = 0; for (let k = -rad; k <= rad; k++) { const yy = Math.min(H - 1, Math.max(0, y + k)); s += t[yy * W + x] * ker[k + rad]; }
-    const cov = Math.min(1, (s / ks) * gain), v = paper - (paper - ink) * cov, i = y * W + x;
-    p[4*i] = p[4*i+1] = p[4*i+2] = v; p[4*i+3] = 255;
+    let s = 0; for (let k = -rad; k <= rad; k++) s += t[Math.min(H - 1, Math.max(0, y + k)) * W + x] * ker[k + rad];
+    o[y * W + x] = paper - (paper - ink) * Math.min(1, (s / ks) * gain);
   }
+  return o;
+}
+
+let zoom = 0;
+function scale() {
+  const cv = $("view"), wrap = $("canvasWrap");
+  if (zoom) return zoom / devicePixelRatio;
+  return Math.min((wrap.clientWidth - 24) / cv.width, (wrap.clientHeight - 24) / cv.height);
+}
+function layoutView() {
+  const cv = $("view"), wrap = $("canvasWrap");
+  if (cv.hidden) return;
+  const s = Math.max(0.01, scale());
+  cv.style.width = cv.width * s + "px"; cv.style.height = cv.height * s + "px";
+  cv.classList.toggle("px", s * devicePixelRatio >= 1);
+  wrap.classList.toggle("pan", wrap.scrollWidth > wrap.clientWidth || wrap.scrollHeight > wrap.clientHeight);
+  $("zoomPct").textContent = Math.round(s * devicePixelRatio * 100) + "%";
+  for (const o of document.querySelectorAll("#zooms button")) o.classList.toggle("on", +o.dataset.z === zoom);
+}
+function setZoom(z) {
+  const wrap = $("canvasWrap");
+  const fx = (wrap.scrollLeft + wrap.clientWidth / 2) / Math.max(1, wrap.scrollWidth);
+  const fy = (wrap.scrollTop + wrap.clientHeight / 2) / Math.max(1, wrap.scrollHeight);
+  zoom = z; layoutView();
+  wrap.scrollLeft = fx * wrap.scrollWidth - wrap.clientWidth / 2;
+  wrap.scrollTop = fy * wrap.scrollHeight - wrap.clientHeight / 2;
+}
+for (const b of document.querySelectorAll("#zooms button")) b.addEventListener("click", () => setZoom(+b.dataset.z));
+for (const b of document.querySelectorAll("#views button"))
+  b.addEventListener("click", () => {
+    view = b.dataset.v;
+    for (const o of document.querySelectorAll("#views button")) o.classList.toggle("on", o === b);
+    draw();
+  });
+new ResizeObserver(layoutView).observe($("canvasWrap"));
+{
+  const wrap = $("canvasWrap"); let pan = null;
+  wrap.addEventListener("wheel", e => {
+    if (!e.ctrlKey || $("view").hidden) return;
+    e.preventDefault();
+    const now = scale() * devicePixelRatio;
+    setZoom(Math.min(16, Math.max(0.1, now * (e.deltaY < 0 ? 1.25 : 0.8))));
+  }, { passive: false });
+  wrap.addEventListener("pointerdown", e => {
+    if (!wrap.classList.contains("pan") || e.button !== 0) return;
+    pan = { x: e.clientX, y: e.clientY, l: wrap.scrollLeft, t: wrap.scrollTop };
+    wrap.setPointerCapture(e.pointerId); wrap.classList.add("panning"); e.preventDefault();
+  });
+  wrap.addEventListener("pointermove", e => { if (pan) { wrap.scrollLeft = pan.l - (e.clientX - pan.x); wrap.scrollTop = pan.t - (e.clientY - pan.y); } });
+  for (const ev of ["pointerup", "pointercancel"]) wrap.addEventListener(ev, () => { pan = null; wrap.classList.remove("panning"); });
 }
 
 function offset(W) {
@@ -541,28 +612,24 @@ function offset(W) {
   return a === "left" ? 0 : a === "right" ? HEAD - W : ((HEAD - W) / 2) | 0;
 }
 
-function lengthMM() {
-  if (!out) return 0;
-  return (out.H / DPMM + S.feed) * S.copies;
-}
+function lengthMM() { return out ? (out.H / DPMM + S.feed) * S.copies : 0; }
 function showLength() {
-  if (!out) { $("len").textContent = ""; gate(); return; }
+  if (!out) { gate(); return; }
   const one = out.H / DPMM + S.feed, tot = one * S.copies;
-  $("len").textContent = S.copies > 1
-    ? `${S.copies} x ${one.toFixed(0)} mm = ${tot.toFixed(0)} mm of paper`
-    : `${tot.toFixed(0)} mm of paper`;
+  const w = (out.W / DPMM).toFixed(0);
+  $("len").textContent = `${w} x ${one.toFixed(0)} mm` + (S.copies > 1 ? `, ${S.copies} copies = ${tot.toFixed(0)} mm of paper` : "");
   $("print").textContent = `print ${tot.toFixed(0)} mm`;
   gate();
 }
 function gate() {
   let why = "";
-  if (!src) why = "load an image first.";
+  if (!src) why = "open an image first.";
   else if (!printer || !printer.connected) why = "printer not connected - plug it in over USB and switch it on.";
   else if (busy || printer.job) why = "printing - press STOP to cancel.";
   else if (printer.paper_out) why = "out of paper.";
   else if (printer.cover_open) why = "cover is open.";
   $("print").disabled = !!why;
-  $("why").textContent = why;
+  if (!$("why").querySelector(".err")) $("why").textContent = why;
 }
 
 function pack() {
@@ -576,8 +643,9 @@ $("print").addEventListener("click", async () => {
   if (!out) return;
   const tot = lengthMM();
   if (tot > 300 && !confirm(`This uses ${tot.toFixed(0)} mm of paper. Print it?`)) return;
+  $("why").textContent = "";
   busy = true; gate();
-  const q = new URLSearchParams({ rows: out.H, density: S.density, speed: S.speed, rate: S.rate, feed: S.feed, copies: S.copies });
+  const q = new URLSearchParams({ rows: out.H, density: heat(), speed: S.speed, feed: S.feed, copies: S.copies });
   try {
     const r = await fetch("/print?" + q, { method: "POST", body: pack(), headers: { "Content-Type": "application/octet-stream" } });
     if (!r.ok) showError(await r.text());
@@ -600,15 +668,15 @@ async function poll() {
       st.innerHTML = `<b>${esc(printer.model || "X3")}</b>  battery ${printer.battery ?? "?"}%  ` +
         (printer.job ? `printing ${printer.job.sent}/${printer.job.rows} rows` : "idle") +
         (flags.length ? `  <span class="err">ERROR ${flags.join(", ")}</span>` : "");
-      const pr = printer.job ? printer.job.sent / Math.max(1, printer.job.rows) : 0;
-      $("progress").firstElementChild.style.width = (pr * 100).toFixed(1) + "%";
     }
+    const pr = printer.job ? printer.job.sent / Math.max(1, printer.job.rows) : 0;
+    $("progress").firstElementChild.style.width = (pr * 100).toFixed(1) + "%";
   } catch (e) { printer = null; $("status").innerHTML = '<span class="err">ERROR</span> lost contact with the app'; }
   gate();
   setTimeout(poll, 1000);
 }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
-poll(); showLength();
+poll(); gate();
 </script>
 </body>
 </html>

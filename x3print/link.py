@@ -76,7 +76,7 @@ class Printer:
             time.sleep(0.01)
         return None
 
-    def print_rows(self, data, density=None, speed=None, feed_mm=8, rate=0, cancel=None, progress=None):
+    def print_rows(self, data, density=None, speed=None, feed_mm=8, cancel=None, progress=None):
         if len(data) % ROW_BYTES:
             raise ValueError("raster length must be a multiple of 108")
         if speed is not None:
@@ -85,14 +85,9 @@ class Printer:
             self.send(proto.DENSITY, bytes((density,)))
         self.send(proto.PAPER_TYPE, bytes((1, 0)))
         rows = len(data) // ROW_BYTES
-        t0 = time.perf_counter()
         for r in range(0, rows, ROWS_PER_FRAME):
             if cancel and cancel.is_set():
                 return r
-            if rate:
-                wait = t0 + r / rate - time.perf_counter()
-                if wait > 0:
-                    time.sleep(wait)
             self.send(proto.RASTER, data[r * ROW_BYTES:(r + ROWS_PER_FRAME) * ROW_BYTES])
             if r % 32 == 0:
                 self.poll()

@@ -169,7 +169,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._reply(400, f"body must be rows x 108 bytes (rows={rows}, got {n})")
         data = self.rfile.read(n)
         params = {"density": _int(q, "density", 9, 1, 15), "speed": _int(q, "speed", 100, 1, 255),
-                  "rate": _int(q, "rate", 0, 0, 1000), "feed_mm": _int(q, "feed", 8, 0, 100),
+                  "feed_mm": _int(q, "feed", 8, 0, 100),
                   "copies": _int(q, "copies", 1, 1, 20)}
         err = WORKER.submit(data, rows, params)
         self._reply(409 if err else 200, err or "queued")
