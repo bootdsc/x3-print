@@ -4,7 +4,7 @@ import os
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from . import library, link
 
@@ -119,6 +119,8 @@ class Handler(BaseHTTPRequestHandler):
                 self._reply(200, json.dumps(WORKER.snapshot()), "application/json")
             elif u.path == "/library":
                 self._reply(200, json.dumps(library.list_items()), "application/json")
+            elif u.path == "/presets":
+                self._reply(200, json.dumps(library.presets()), "application/json")
             elif len(parts) == 3 and parts[0] == "library" and parts[2] == "source":
                 self._reply(200, *library.source(parts[1]))
             elif len(parts) == 3 and parts[0] == "library" and parts[2] == "thumb.png":
@@ -130,6 +132,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         _, parts = self._parts()
+        if len(parts) == 2 and parts[0] == "presets":
+            try:
+                library.delete_preset(unquote(parts[1]))
+                return self._reply(200, "deleted")
+            except KeyError:
+                return self._reply(404, "no such preset")
         if len(parts) != 2 or parts[0] != "library":
             return self._reply(404, "not found")
         try:
@@ -152,6 +160,13 @@ class Handler(BaseHTTPRequestHandler):
             except (ValueError, KeyError, TypeError) as e:
                 return self._reply(400, f"bad save: {e}")
             return self._reply(200, json.dumps({"id": item_id}), "application/json")
+        if u.path == "/presets":
+            try:
+                j = json.loads(self.rfile.read(n))
+                library.save_preset(str(j["name"]), j["settings"])
+            except (ValueError, KeyError, TypeError) as e:
+                return self._reply(400, f"bad preset: {e}")
+            return self._reply(200, "saved")
         if len(parts) == 3 and parts[0] == "library" and parts[2] == "printed":
             try:
                 library.mark_printed(parts[1])

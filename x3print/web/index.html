@@ -62,6 +62,13 @@ input[type=range]:hover::-webkit-slider-thumb { background:var(--glow); }
 .step { display:grid; grid-template-columns:28px 1fr 28px; gap:2px; }
 .step output { text-align:center; color:var(--glow); background:var(--black); border:1px solid var(--border); padding:2px 0; }
 .step button { padding:2px 0; }
+::selection { background:var(--green-dk); color:#fff; }
+output.edit { cursor:text; }
+output.edit:hover { outline:1px solid var(--green-dim); }
+input.typed { width:100%; box-sizing:border-box; min-width:0; font:inherit; font-family:Consolas, monospace; color:var(--glow); background:var(--black);
+              border:1px solid var(--glow); outline:0; padding:1px 2px; }
+.row > input.typed { text-align:right; }
+.step input.typed { text-align:center; }
 
 #go { border-top:1px solid var(--border); padding:6px 12px 8px; }
 #len { font-family:Consolas, monospace; color:var(--glow); margin:0 0 6px; }
@@ -113,6 +120,15 @@ dialog .ok { background:var(--green-dk); color:#fff; border-color:var(--green); 
 #libFoot { display:flex; gap:6px; align-items:center; padding:8px 10px; border-top:1px solid var(--border); flex-wrap:wrap; }
 #libFoot .msg { flex:1; color:var(--gray); font-size:12px; }
 #libEmpty { padding:20px; color:var(--gray); grid-column:1 / -1; }
+#presetBox { position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px; margin:2px 0 4px; }
+#preset { text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#presetList { position:absolute; top:calc(100% + 2px); left:0; right:0; z-index:20; max-height:50vh; overflow:auto;
+              background:var(--panel); border:1px solid var(--green-dim); box-shadow:0 8px 30px #000; padding:2px; }
+#presetList[hidden] { display:none; }
+#presetList .pi { display:grid; grid-template-columns:minmax(0,1fr) 28px; gap:2px; margin:1px 0; }
+#presetList .pi button:first-child { text-align:left; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#presetList .pi.on button:first-child { background:var(--green-dk); color:#fff; border-color:var(--glow); }
+#presetList .none { padding:8px; color:var(--gray); font-size:12px; }
 
 </style>
 </head>
@@ -124,10 +140,15 @@ dialog .ok { background:var(--green-dk); color:#fff; border-color:var(--green); 
 <main>
   <aside>
     <div id="controls">
+      <h2>Preset</h2>
+      <div id="presetBox" title="saved image, dither and printer settings - one per paper or sticker stock">
+        <button id="preset">none &#9662;</button><button id="presetSave">save as...</button>
+        <div id="presetList" hidden></div>
+      </div>
       <h2>Size</h2>
       <div class="checks"><label><input type="checkbox" id="longways" checked>long side down the paper</label></div>
       <div class="row"><label>rotate</label><div class="seg" data-for="rot"></div><input type="hidden" id="rot" value="0"></div>
-      <div class="row"><label for="scale">scale</label><input type="range" id="scale" min="10" max="500" step="5" value="100"><output id="scale_o"></output></div>
+      <div class="row"><label for="scale">scale</label><input type="range" id="scale" min="10" max="500" step="1" value="100"><output id="scale_o"></output></div>
       <div class="row"><label>position</label><div class="seg" data-for="posx"></div><input type="hidden" id="posx" value="0.5"><input type="hidden" id="posy" value="0.5"></div>
 
       <h2>Image</h2>
@@ -303,7 +324,40 @@ for (const id of SET_IDS) {
     else if (id === "heat") { if (view === "thermal") draw(); }
     else schedule();
   });
-  if (el.type === "range") el.addEventListener("dblclick", () => setVal(id, el.defaultValue));
+  if (el.type === "range") {
+    el.addEventListener("dblclick", () => setVal(id, el.defaultValue));
+    el.addEventListener("wheel", e => {
+      if (document.activeElement !== el) return;
+      e.preventDefault();
+      setVal(id, Math.min(+el.max, Math.max(+el.min, +el.value + (e.deltaY < 0 ? 1 : -1) * (+el.step || 1))));
+    }, { passive: false });
+  }
+  const o = $(id + "_o");
+  if (o) { o.classList.add("edit"); o.title = "click to type a value"; o.addEventListener("click", () => typeIn(id, o)); }
+}
+
+const UNIT = { gamma: 100, sharp: 100 };
+function typeIn(id, o) {
+  const el = $(id), list = STEPS[id], inp = document.createElement("input");
+  const lo = list ? list[0] : +el.min, hi = list ? list[list.length - 1] : +el.max;
+  inp.className = "typed"; inp.value = o.textContent.replace(/[^\d.\-a-z]/gi, "").replace(/x$|mm$/, "");
+  o.hidden = true; o.after(inp); inp.focus(); inp.select();
+  let done = false;
+  const finish = ok => {
+    if (done) return; done = true;
+    if (ok) {
+      const t = inp.value.trim().toLowerCase();
+      let v = t === "all" ? hi : parseFloat(t) * (UNIT[id] || 1);
+      if (Number.isFinite(v)) {
+        v = Math.min(hi, Math.max(lo, Math.round(v)));
+        if (!list && el.step && el.step !== "any") v = lo + Math.round((v - lo) / +el.step) * +el.step;
+        setVal(id, v);
+      }
+    }
+    inp.remove(); o.hidden = false;
+  };
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") finish(true); else if (e.key === "Escape") finish(false); });
+  inp.addEventListener("blur", () => finish(true));
 }
 
 let srcBlob = null, srcName = "", libId = null, libSettings = null;
@@ -339,7 +393,51 @@ function setSettings(s) {
 }
 const unchanged = () => libId && libSettings === JSON.stringify(getSettings());
 function markSaved() { $("saved").textContent = !src ? "" : unchanged() ? "saved" : libId ? "changed since saved" : "not saved"; }
-document.querySelector("aside").addEventListener("input", () => requestAnimationFrame(markSaved));
+document.querySelector("aside").addEventListener("input", () => requestAnimationFrame(() => { markSaved(); showPreset(); }));
+
+const PRESET_IDS = ["bright", "contrast", "gamma", "sharp", "invert", "smooth", "pix", "levels", "dither", "cell", "thresh", "heat", "speed", "feed"];
+let presets = {}, presetName = "";
+function curPreset() { const all = getSettings(); return Object.fromEntries(PRESET_IDS.map(k => [k, all[k]])); }
+function showPreset() {
+  const p = presets[presetName];
+  if (!p) presetName = "";
+  const changed = p && JSON.stringify(PRESET_IDS.map(k => String(p[k]))) !== JSON.stringify(PRESET_IDS.map(k => String(curPreset()[k])));
+  $("preset").textContent = (presetName || "no preset") + (changed ? " (changed)" : "") + " ▾";
+}
+async function loadPresets() {
+  try { presets = await (await fetch("/presets", { cache: "no-store" })).json(); } catch { presets = {}; }
+  showPreset(); if (!$("presetList").hidden) listPresets();
+}
+function listPresets() {
+  const box = $("presetList"), names = Object.keys(presets).sort((a, b) => a.localeCompare(b));
+  box.replaceChildren();
+  if (!names.length) { const d = document.createElement("div"); d.className = "none"; d.textContent = "no presets yet - tune the settings, then save as..."; box.append(d); }
+  for (const n of names) {
+    const row = document.createElement("div"), use = document.createElement("button"), del = document.createElement("button");
+    row.className = "pi" + (n === presetName ? " on" : ""); use.textContent = n; use.title = n; del.textContent = "×"; del.title = "delete " + n;
+    use.addEventListener("click", () => { setSettings(presets[n]); presetName = n; box.hidden = true; showPreset(); });
+    del.addEventListener("click", async () => {
+      if (!await ask(`delete preset "${n}"?`)) return;
+      await fetch("/presets/" + encodeURIComponent(n), { method: "DELETE" });
+      if (presetName === n) presetName = "";
+      loadPresets();
+    });
+    row.append(use, del); box.append(row);
+  }
+}
+$("preset").addEventListener("click", () => { const b = $("presetList"); b.hidden = !b.hidden; if (!b.hidden) listPresets(); });
+document.addEventListener("pointerdown", e => { if (!$("presetBox").contains(e.target)) $("presetList").hidden = true; });
+document.addEventListener("keydown", e => { if (e.key === "Escape") $("presetList").hidden = true; });
+$("presetSave").addEventListener("click", async () => {
+  $("presetList").hidden = true;
+  const n = (await ask("name this preset - the paper or sticker stock it is tuned for", presetName) || "").trim();
+  if (!n) return;
+  if (n !== presetName && presets[n] && !await ask(`replace the preset "${n}"?`)) return;
+  const r = await fetch("/presets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: n, settings: curPreset() }) });
+  if (r.ok) presetName = n.slice(0, 60);
+  loadPresets();
+});
+loadPresets();
 
 function thumbB64() {
   const { W, H, bits } = out, full = document.createElement("canvas");
@@ -546,11 +644,10 @@ const MARGIN = (() => {
 })();
 function draw() {
   if (!out) return;
-  const { g, W, H } = out, cv = $("view"), x = cv.getContext("2d");
+  const { g, W, H } = out, cv = $("view");
   $("empty").hidden = true; cv.hidden = false;
   $("viewHint").textContent = HINTS[view] + " patterned paper stays blank. drag the image to move it, double-click to centre. ctrl+wheel zooms, middle-drag pans.";
-  if (cv.width !== HEAD || cv.height !== H) { cv.width = HEAD; cv.height = H; }
-  const left = g.left, img = x.createImageData(HEAD, H), p = img.data;
+  const left = g.left, img = new ImageData(HEAD, H), p = img.data;
   fillMargin(p, H);
   const put = (xx, y, v) => { const i = 4 * (y * HEAD + xx + left); p[i] = p[i+1] = p[i+2] = v; };
   if (view === "dithered") {
@@ -569,8 +666,33 @@ function draw() {
       }
     }
   }
-  x.putImageData(img, 0, 0);
+  shown = img; shownAt = 0;
   layoutView();
+}
+
+let shown = null, shownAt = 0;
+function shrink(src, dw, dh) {
+  const sw = src.width, sh = src.height, a = src.data, kx = sw / dw, ky = sh / dh, bx = Math.max(2, kx), by = Math.max(2, ky);
+  const col = new Float32Array(3 * dw * sh), o = new ImageData(dw, dh), d = o.data;
+  for (let y = 0; y < sh; y++) for (let x = 0; x < dw; x++) {
+    const x0 = Math.max(0, (x + 0.5) * kx - bx / 2), x1 = Math.min(sw, (x + 0.5) * kx + bx / 2), n = x1 - x0, k = 3 * (y * dw + x);
+    for (let i = x0 | 0; i < x1; i++) {
+      const w = (Math.min(x1, i + 1) - Math.max(x0, i)) / n, q = 4 * (y * sw + i);
+      col[k] += a[q] * w; col[k + 1] += a[q + 1] * w; col[k + 2] += a[q + 2] * w;
+    }
+  }
+  for (let y = 0; y < dh; y++) {
+    const y0 = Math.max(0, (y + 0.5) * ky - by / 2), y1 = Math.min(sh, (y + 0.5) * ky + by / 2), n = y1 - y0;
+    for (let x = 0; x < dw; x++) {
+      const k = 4 * (y * dw + x); let r = 0, gr = 0, b = 0;
+      for (let j = y0 | 0; j < y1; j++) {
+        const w = (Math.min(y1, j + 1) - Math.max(y0, j)) / n, q = 3 * (j * dw + x);
+        r += col[q] * w; gr += col[q + 1] * w; b += col[q + 2] * w;
+      }
+      d[k] = r; d[k + 1] = gr; d[k + 2] = b; d[k + 3] = 255;
+    }
+  }
+  return o;
 }
 
 function thermal(W, H) {
@@ -594,15 +716,22 @@ let zoom = 0;
 function scale() {
   const cv = $("view"), wrap = $("canvasWrap");
   if (zoom) return zoom / devicePixelRatio;
-  const d = Math.min((wrap.clientWidth - 24) / cv.width, (wrap.clientHeight - 24) / cv.height) * devicePixelRatio;
+  const d = Math.min((wrap.clientWidth - 24) / HEAD, (wrap.clientHeight - 24) / (out ? out.H : cv.height)) * devicePixelRatio;
   return (d >= 1 && Math.floor(d) >= 0.7 * d ? Math.floor(d) : d) / devicePixelRatio;
 }
 function layoutView() {
   const cv = $("view"), wrap = $("canvasWrap");
   if (cv.hidden) return;
-  const s = Math.max(0.01, scale());
-  cv.style.width = cv.width * s + "px"; cv.style.height = cv.height * s + "px";
-  const dev = s * devicePixelRatio;
+  const s = Math.max(0.01, scale()), dev = s * devicePixelRatio;
+  if (shown) {
+    const fit = dev < 1 ? Math.max(1, Math.round(HEAD * dev)) : HEAD;
+    if (shownAt !== fit) {
+      const im = fit === HEAD ? shown : shrink(shown, fit, Math.max(1, Math.round(shown.height * fit / HEAD)));
+      cv.width = im.width; cv.height = im.height; cv.getContext("2d").putImageData(im, 0, 0); shownAt = fit;
+    }
+    cv.style.width = cv.width / devicePixelRatio * (dev < 1 ? 1 : dev) + "px";
+    cv.style.height = cv.height / devicePixelRatio * (dev < 1 ? 1 : dev) + "px";
+  }
   cv.classList.toggle("px", dev >= 1 && Math.abs(dev - Math.round(dev)) < 0.01);
   if (out) cv.classList.toggle("move", out.g.Wt !== HEAD || out.g.Ht > out.H);
   $("zoomPct").textContent = Math.round(s * devicePixelRatio * 100) + "%";

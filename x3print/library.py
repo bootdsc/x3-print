@@ -111,3 +111,33 @@ def thumb(item_id):
 
 def delete(item_id):
     shutil.rmtree(_dir(item_id))
+
+
+PRESETS = os.path.join(ROOT, "presets.json")
+
+
+def presets():
+    try:
+        with open(PRESETS, encoding="utf-8") as f:
+            p = json.load(f)
+        return p if isinstance(p, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_preset(name, settings):
+    name = name.strip()[:60]
+    if not name or not isinstance(settings, dict):
+        raise ValueError("preset needs a name and settings")
+    p = presets()
+    p[name] = settings
+    os.makedirs(ROOT, exist_ok=True)
+    _write(PRESETS, json.dumps(p, indent=1).encode())
+
+
+def delete_preset(name):
+    p = presets()
+    if name not in p:
+        raise KeyError(name)
+    del p[name]
+    _write(PRESETS, json.dumps(p, indent=1).encode())

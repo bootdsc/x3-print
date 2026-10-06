@@ -20,21 +20,25 @@ Windows SmartScreen may warn about an unsigned app the first time. Choose
 ## Using it
 
 - **Load** an image by dropping it on the window, pasting it, or clicking the drop area.
-- **Size:** rotate, scale to a fraction of the paper width, align left, center or right.
-  Long images print down the paper by default.
+- **Size:** rotate, scale 10-500% of the paper width, and place it left, center or
+  right, or drag the image to move it. Long images print down the paper by default.
 - **Decimate:** pixel size turns each image pixel into an N x N block of dots, for a
   chunky look; grey levels posterises before dithering.
 - **Tone:** brightness, contrast, gamma, sharpen, invert.
 - **Dither:** Bayer 2x2 / 4x4 / 8x8, clustered 4x4 / 8x8, Floyd-Steinberg, Atkinson,
   or a plain threshold for line art. Cell scale enlarges the pattern, which holds up
   better against heat spread on the paper.
-- **Views:** original, grayscale, decimated, dithered (exactly the dots that will be
-  printed) and "on paper", a rough preview of how the dots spread. Zoom to 2x or 4x to
-  judge a dither.
+- **Views:** original, grey, decimated, dots (exactly the dots that will be printed)
+  and "on paper", a rough preview of how the dots spread. Zoom to 2x, 4x or 8x to judge
+  a dither; ctrl+wheel zooms.
+- **Exact values:** click any number to type a value. A clicked slider also steps by
+  one with the arrow keys or the mouse wheel, and a double-click resets it.
 - **Printer:** heat, speed, feed after, copies. The print button shows how much paper
   the job uses; STOP halts sending immediately.
+- **Presets:** save the tone, dither and printer settings under a name, one per paper
+  or sticker stock, and pick it from the list next time.
 - **Library:** save an image with its settings and reload it later. Printed images are
-  added automatically. Saved items go in a `library` folder next to the app.
+  added automatically. Saved items and presets go in a `library` folder next to the app.
 
 ## Run from source
 
