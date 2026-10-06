@@ -1,19 +1,21 @@
 # X3 Print
 
-The Orgbro X3 wants you to install its phone app. Skip it. Plug the printer into your
-PC with a USB-C cable, open X3 Print in your browser and hit print. No spyware APK
-sideloading. The page talks to the printer and to nothing else.
+The Orgbro X3 phone app requires so many permissions its basically spyware. Besides the security risks the app itself is a fluster cuck of ad's and paid add-ons so lets skip it and do make better. 
 
-Mine is headed for the cyberdeck docking station to crank out stickers and labels on
-demand.
+Don't waste another minute get right to printing with this super easy quick step by step:
+
+Plug in the printer with a USB-C cable, open X3-Print - click connect printer - select the x3 in the popup and click connect. Thats it you are ready to go, load up an image, rotate as needed and give it a print using the defaults at first then adjust to fine tune. You'll find this to be a feature tool with many more features then the Orgbro app and without having to wait 30s for a print to start after transferring over BLE. 
+
+No collection of user location, MAC address, printer serial number, phone number, gmail account name, gmail user name, contacts list, browser history etc. The page talks to the printer and to nothing else.
+
+Mine is headed for a cyberdeck docking station add-on for my writerdeck, how will you use your's? Leave your comments...just kidding. 
 
 ![X3 Print](docs/screenshot.png)
 
 ## Get it
 
-Download this repo as a ZIP, unzip it, and open `index.html` in Chrome, Edge or another
-Chromium browser. Click connect printer and pick the X3. Firefox and Safari can't talk
-to USB serial devices, so they won't work.
+Download this repo as a ZIP, uncompress and open `index.html` in Brave, Chromium, Edge, chrome or another
+Chromium based browser. Firefox and Safari can't talk to USB serial devices, so they won't work.
 
 On Linux, Chrome also needs permission to open the port:
 
@@ -43,7 +45,7 @@ Then replug the printer. The rule also keeps ModemManager off it.
 Because of a vendor lockout the X3 only takes rows of 864 dots, which leaves its print
 about 2 mm short of one edge of the paper. X3 Print adds a 2 mm margin to the other
 side so prints come out centred, at the cost of 4 mm of width in total. That leaves 840
-dots, 71.1 mm. Dots are square, 300 dpi both ways, so dither patterns print undistorted.
+dots, 71.1 mm. Dots are square, 300 dpi both ways so dither patterns print undistorted.
 
 ## Command line
 
@@ -74,15 +76,13 @@ IDs will cost you paper.
 
 ## Cyberdeck Cafe
 
-Built at the Cyberdeck Cafe. More projects and the Discord are on Neon City Mix.
-
+Built by BootDSC for the Cyberdeck Cafe.
 https://cyberdeck.cafe/
 
 ## Acknowledgements
 
 The frame format and the first set of commands came from the Orgstra S001 driver in
-TiMini-Print (Apache-2.0).
-
+TiMini-Print (Apache-2.0). Big thanks for the head start!
 https://github.com/Dejniel/TiMini-Print
 
 ## License
